@@ -3,6 +3,8 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:dio/dio.dart';
+
+import '../models/history_item.dart';
 class ApiService {
 
   static const String baseUrl = "http://192.168.1.11:8000";
@@ -32,7 +34,7 @@ class ApiService {
     var res = await http.Response.fromStream(response);
 
     // 🔥 check JSON lỗi từ server
-    final data = jsonDecode(res.body);
+    final data = jsonDecode(utf8.decode(res.bodyBytes));
 
     if (data["error"] != null) {
       throw Exception(data["error"]);
@@ -56,5 +58,24 @@ class ApiService {
   // Bạn có thể thêm các interceptor để log lỗi hoặc thêm token nếu cần
   static void init() {
     dio.interceptors.add(LogInterceptor(responseBody: true, requestBody: true));
+  }
+  static Future<List<HistoryItem>> getHistory({
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    final url = Uri.parse(
+        "$baseUrl/history?limit=$limit&offset=$offset");
+
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(utf8.decode(response.bodyBytes));
+
+      return (data['history'] as List)
+          .map((e) => HistoryItem.fromJson(e))
+          .toList();
+    } else {
+      throw Exception("Failed to load history");
+    }
   }
 }

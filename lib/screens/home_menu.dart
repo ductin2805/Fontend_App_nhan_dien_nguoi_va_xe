@@ -1,5 +1,7 @@
+import 'package:ai_traffic_app/screens/face_recognition_screen.dart';
 import 'package:flutter/material.dart';
 import 'detection_screen.dart';
+import 'history_screen.dart';
 import 'plate_screen.dart';
 import 'realtime_camera_screen.dart';
 class HomeMenu extends StatefulWidget {
@@ -49,23 +51,23 @@ class _HomeMenuState extends State<HomeMenu> {
                   // 📹 REALTIME
                   menuCard(
                     icon: Icons.videocam,
-                    title: "REALTIME\nCAMERA",
-                    subtitle: "Stream & Detect",
+                    title: "VIDEO",
+                    subtitle: "Phân tích & nhận diện ",
                     onTap: () {
                       Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const RealtimeCameraScreen(),
-                      ),
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const RealtimeCameraScreen(),
+                        ),
                       );
                     },
                   ),
 
                   // 🚗 OBJECT DETECTION
                   menuCard(
-                    icon: Icons.directions_car,
-                    title: "OBJECT\nDETECTION",
-                    subtitle: "Detect vehicles",
+                    icon: Icons.directions_car_filled, // chuẩn hơn
+                    title: "NHẬN DIỆN\n GIAO THÔNG",
+                    subtitle: "Phân tích xe cộ",
                     onTap: () {
                       Navigator.push(
                         context,
@@ -78,9 +80,9 @@ class _HomeMenuState extends State<HomeMenu> {
 
                   // 🔢 PLATE
                   menuCard(
-                    icon: Icons.credit_card,
-                    title: "PLATE\nRECOGNITION",
-                    subtitle: "Read plates",
+                    icon: Icons.badge, // giống biển số hơn
+                    title: "NHẬN DIỆN\nBIỂN SỐ",
+                    subtitle: "Phân tích biển số",
                     onTap: () {
                       Navigator.push(
                         context,
@@ -91,19 +93,24 @@ class _HomeMenuState extends State<HomeMenu> {
                     },
                   ),
 
-                  // 📊 ANALYTICS
+                  // 😀 FACE RECOGNITION
                   menuCard(
-                    icon: Icons.bar_chart,
-                    title: "TRAFFIC\nANALYTICS",
-                    subtitle: "Stats & Trends",
+                    icon: Icons.face, // icon chuẩn nhất rồi, đừng sáng tạo nữa
+                    title: "NHẬN DIỆN\nKHUÔN MẶT",
+                    subtitle: "truy xuất thông tin",
                     onTap: () {
-                      // TODO: analytics
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const FaceRecognitionScreen(),
+                        ),
+                      );
                     },
                   ),
                 ],
               ),
             ),
-          ),
+          )
         ],
       ),
 
@@ -111,12 +118,42 @@ class _HomeMenuState extends State<HomeMenu> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentIndex,
         onTap: (i) {
-          setState(() => currentIndex = i);
+          if (i == 0) {
+            // Home (đang ở đây rồi thì thôi)
+            return;
+          }
+
+          if (i == 1) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => HistoryScreen(),
+              ),
+            );
+          }
+
+          if (i == 2) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => HistoryScreen(),
+              ),
+            );
+          }
         },
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: "History"),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: "Settings"),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: "Trang Chủ",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history),
+            label: "Lịch Sử",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: "Cài đặt",
+          ),
         ],
       ),
     );

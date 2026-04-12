@@ -1,11 +1,11 @@
 import 'dart:io';
-
+import 'dart:convert';
+import 'package:ai_traffic_app/screens/plates_screen.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
-import 'package:collection/collection.dart';
-
-
+import '';
 import '../models/frame_result.dart';
 import '../models/recognition_response.dart';
 import '../services/recognition_service.dart';
@@ -21,12 +21,13 @@ class RealtimeCameraScreen extends StatefulWidget {
 class _RealtimeCameraScreenState extends State<RealtimeCameraScreen> {
   final RecognitionService _service = RecognitionService();
   final ImagePicker _picker = ImagePicker();
-
+  File? _selectedVideo;
   VideoPlayerController? _controller;
-
   bool _isLoading = false;
   RecognitionResponse? _result;
   FrameResult? _currentFrame;
+
+  DateTime _lastUpdate = DateTime.now();
 
   /// 🎬 PICK VIDEO
   Future<void> _pickAndUploadVideo() async {
@@ -57,9 +58,15 @@ class _RealtimeCameraScreenState extends State<RealtimeCameraScreen> {
     });
   }
 
-  /// 🧠 SYNC FRAME
+  /// 🧠 SYNC FRAME (có throttle)
   void _syncFrame() {
     if (_result == null || _controller == null) return;
+
+    if (DateTime.now().difference(_lastUpdate).inMilliseconds < 200) {
+      return;
+    }
+
+    _lastUpdate = DateTime.now();
 
     final time =
         _controller!.value.position.inMilliseconds / 1000.0;
@@ -75,11 +82,23 @@ class _RealtimeCameraScreenState extends State<RealtimeCameraScreen> {
     }
   }
 
-  /// 🔄 RESET
   void _reset() {
+    /// 🧠 GỠ listener để tránh leak + spam setState
+    _controller?.removeListener(_syncFrame);
+
+    /// ⏸ DỪNG video
+    _controller?.pause();
+
+    /// 💀 HUỶ player
+    _controller?.dispose();
+
+    /// 🧹 RESET TOÀN BỘ STATE
     setState(() {
-      _result = null;
-      _currentFrame = null;
+      _selectedVideo = null;   // ❌ xoá video đã chọn
+      _controller = null;      // ❌ xoá player
+      _result = null;          // ❌ xoá kết quả AI
+      _currentFrame = null;    // ❌ xoá frame hiện tại
+      _isLoading = false;      // ❌ đảm bảo không còn loading
     });
   }
 
@@ -95,16 +114,50 @@ class _RealtimeCameraScreenState extends State<RealtimeCameraScreen> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
+          /// 🔙 BACK
+          Positioned(
+            top: 40,
+            left: 10,
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+
+          /// ⏯ PLAY / PAUSE
+          Positioned(
+            top: 40,
+            right: 10,
+            child: IconButton(
+              icon: Icon(
+                _controller?.value.isPlaying == true
+                    ? Icons.pause
+                    : Icons.play_arrow,
+                color: Colors.white,
+              ),
+              onPressed: () {
+                if (_controller == null) return;
+
+                setState(() {
+                  _controller!.value.isPlaying
+                      ? _controller!.pause()
+                      : _controller!.play();
+                });
+              },
+            ),
+          ),
           /// 🎬 VIDEO
-          if (_controller != null &&
-              _controller!.value.isInitialized)
+          if (_controller != null && _controller!.value.isInitialized)
             Center(
               child: AspectRatio(
                 aspectRatio: _controller!.value.aspectRatio,
-                child: VideoPlayer(_controller!),
+                child: RepaintBoundary(
+                  child: VideoPlayer(_controller!),
+                ),
               ),
             ),
 
+          /// 💤 EMPTY UI
           if (_controller == null)
             const Center(
               child: Column(
@@ -115,10 +168,7 @@ class _RealtimeCameraScreenState extends State<RealtimeCameraScreen> {
                   SizedBox(height: 20),
                   Text(
                     "Chưa chọn video",
-                    style: TextStyle(
-                      color: Colors.white54,
-                      fontSize: 18,
-                    ),
+                    style: TextStyle(color: Colors.white54, fontSize: 18),
                   ),
                 ],
               ),
@@ -149,8 +199,7 @@ class _RealtimeCameraScreenState extends State<RealtimeCameraScreen> {
                 height: (v.bbox[3] - v.bbox[1]) * scaleY,
                 child: Container(
                   decoration: BoxDecoration(
-                    border:
-                    Border.all(color: Colors.green, width: 2),
+                    border: Border.all(color: Colors.green, width: 2),
                   ),
                   child: Align(
                     alignment: Alignment.topLeft,
@@ -172,7 +221,7 @@ class _RealtimeCameraScreenState extends State<RealtimeCameraScreen> {
           if (_currentFrame != null &&
               _currentFrame!.vehicles.isNotEmpty)
             Positioned(
-              bottom: 110,
+              bottom: 170,
               left: 20,
               right: 20,
               child: Container(
@@ -182,69 +231,118 @@ class _RealtimeCameraScreenState extends State<RealtimeCameraScreen> {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
-                  crossAxisAlignment:
-                  CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                        "🚗 Tổng xe: ${_currentFrame!.vehicles.length}"),
+                        "🚗 ${_currentFrame!.vehicles.length} xe phát hiện"),
                     const SizedBox(height: 8),
-                    ..._currentFrame!.vehicles.map((v) =>
-                        Container(
-                          margin:
-                          const EdgeInsets.only(bottom: 6),
-                          padding:
-                          const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            borderRadius:
-                            BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            mainAxisAlignment:
-                            MainAxisAlignment
-                                .spaceBetween,
-                            children: [
-                              Text(
-                                  v.plate?.text ??
-                                      "Không có biển"),
-                              Text(
-                                "${(v.confidence * 100).toStringAsFixed(1)}%",
-                                style: const TextStyle(
-                                    color: Colors.green),
+                    ..._currentFrame!.vehicles.map((v) {
+                      final confidence =
+                          (v.plate?.confidence ?? v.confidence) * 100;
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 6),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              v.plate?.text ?? "Không có biển",
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              "${confidence.toStringAsFixed(1)}%",
+                              style: const TextStyle(
+                                color: Colors.green,
+                                fontWeight: FontWeight.bold,
                               ),
-                            ],
-                          ),
-                        )),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
                   ],
                 ),
               ),
             ),
 
-          /// 🔴 STATUS
-          Positioned(
-            top: 50,
-            right: 20,
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.6),
-                borderRadius:
-                BorderRadius.circular(10),
-              ),
-              child: const Text(
-                "DETECTING...",
-                style: TextStyle(color: Colors.red),
+          /// 🎞 TIMELINE LIST (CÁI BẠN MUỐN)
+          if (_result != null)
+            Positioned(
+              bottom: 70,
+              left: 0,
+              right: 0,
+              height: 90,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _result!.results.length,
+                itemBuilder: (context, index) {
+                  final frame = _result!.results[index];
+
+                  if (frame.vehicles.isEmpty) {
+                    return const SizedBox();
+                  }
+
+                  return GestureDetector(
+                    onTap: () {
+                      _controller?.seekTo(
+                        Duration(
+                            milliseconds:
+                            (frame.timestamp * 1000).toInt()),
+                      );
+                    },
+                    child: Container(
+                      width: 120,
+                      margin: const EdgeInsets.symmetric(horizontal: 6),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.7),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.green),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "${frame.timestamp.toStringAsFixed(1)}s",
+                            style:
+                            const TextStyle(color: Colors.white),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "${frame.vehicles.length} xe",
+                            style:
+                            const TextStyle(color: Colors.green),
+                          ),
+                          const SizedBox(height: 4),
+
+                          /// 👇 nếu có ảnh base64 thì show thumbnail
+                          if (frame.annotatedFrame != null)
+                            Expanded(
+                              child: Image.memory(
+                                base64Decode(frame.annotatedFrame!),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
-          ),
 
           /// 🎮 CONTROL BAR
           Positioned(
-            bottom: 20,
+            bottom: 10,
             left: 20,
             right: 20,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(40),
@@ -252,57 +350,48 @@ class _RealtimeCameraScreenState extends State<RealtimeCameraScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  /// 📁 CHỌN VIDEO
                   GestureDetector(
                     onTap: _pickAndUploadVideo,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.image, color: Colors.black54),
-                        SizedBox(height: 4),
-                        Text("Chọn Video",
-                            style: TextStyle(fontSize: 12, color: Colors.black54)),
-                      ],
-                    ),
+                    child: const Icon(Icons.image),
                   ),
-
-                  /// 🔵 NÚT CHÍNH
                   GestureDetector(
-                    onTap: _pickAndUploadVideo,
+                    onTap: () {
+                      if (_result == null || _result!.plates.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Chưa có dữ liệu")),
+                        );
+                        return;
+                      }
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PlatesScreen(plates: _result!.plates),
+                        ),
+                      );
+                    },
                     child: Container(
-                      width: 65,
-                      height: 65,
-                      decoration: const BoxDecoration(
-                        color: Colors.blue,
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: Colors.blue[900],
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 28),
+                      child: const Icon(Icons.camera_alt,
+                          color: Colors.white),
                     ),
                   ),
-
-                  /// 🔄 RESET
                   GestureDetector(
                     onTap: _reset,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.refresh, color: Colors.black54),
-                        SizedBox(height: 4),
-                        Text("Reset",
-                            style: TextStyle(fontSize: 12, color: Colors.black54)),
-                      ],
-                    ),
+                    child: const Icon(Icons.refresh),
                   ),
                 ],
               ),
             ),
           ),
 
-          /// ⏳ LOADING
           if (_isLoading)
-            const Center(
-                child:
-                CircularProgressIndicator()),
+            const Center(child: CircularProgressIndicator()),
         ],
       ),
     );
