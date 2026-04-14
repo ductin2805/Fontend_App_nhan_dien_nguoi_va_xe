@@ -1,4 +1,5 @@
 import 'package:ai_traffic_app/screens/face_recognition_screen.dart';
+import 'package:ai_traffic_app/screens/setting_screen.dart';
 import 'package:flutter/material.dart';
 import 'detection_screen.dart';
 import 'history_screen.dart';
@@ -136,7 +137,7 @@ class _HomeMenuState extends State<HomeMenu> {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (_) => HistoryScreen(),
+                builder: (_) => SettingsScreen(),
               ),
             );
           }

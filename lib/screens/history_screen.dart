@@ -1,50 +1,69 @@
+import 'package:ai_traffic_app/screens/setting_screen.dart';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/history_item.dart';
+import '../services/history_filter_service.dart';
+import 'history_detail_screen.dart';
 import 'home_menu.dart';
 
 class HistoryScreen extends StatefulWidget {
+  const HistoryScreen({super.key});
+
   static const Map<String, String> typeMap = {
     "face_recognition": "NHẬN DIỆN KHUÔN MẶT",
-    "image_detection": "PHÂN TÍCH HÌNH ẢNH",
-    "object_detection": "NHẬN DIỆN HÌNH ẢNH",
+    "image_detection": "PHÂN TÍCH BIỂN SỐ",
+    "object_detection": "PHÂN TÍCH HÌNH ẢNH",
     "video_processing": "NHẬN DIỆN VIDEO",
-    "detect_plates": "PHÂN TÍCH BIỂN SỐ",
+    "detect_plates": "",
     "face_registration": "NHẬP DATA",
   };
 
-  ScrollController controller = ScrollController();
-  String getTitle(String type) => typeMap[type] ?? type;
   @override
-  _HistoryScreenState createState() => _HistoryScreenState();
+  State<HistoryScreen> createState() => _HistoryScreenState();
 }
-
+List<String> endpoints = [];
+List<String> actionTypes = [];
+String? selectedEndpoint;
+String? selectedType;
+String? keyword;
 class _HistoryScreenState extends State<HistoryScreen> {
   List<HistoryItem> history = [];
   List<HistoryItem> filtered = [];
+  Set<String> selectedIds = {};
+  bool isSelectMode = false;
   int limit = 20;
   int offset = 0;
 
   bool isLoadingMore = false;
   bool hasMore = true;
 
-  ScrollController controller = ScrollController();
-  String keyword = "";
-  bool vehicleOnly = false;
+  final ScrollController controller = ScrollController();
 
   final String baseUrl = "http://192.168.1.11:8000";
 
   @override
-  @override
   void initState() {
     super.initState();
     loadHistory();
+    loadFilterValues();
 
     controller.addListener(() {
       if (controller.position.pixels ==
           controller.position.maxScrollExtent) {
         loadMore();
       }
+    });
+  }
+  Future<void> applyFilter() async {
+    final res = await HistoryFilterService.filter(
+      endpoint: selectedEndpoint,
+      actionType: selectedType,
+    );
+
+    final list = res["history"] as List;
+
+    setState(() {
+      filtered = list.map((e) => HistoryItem.fromJson(e)).toList();
     });
   }
 
@@ -57,7 +76,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
       setState(() {
         history = data;
-        filtered = data;
+        filtered = data.where((e) => e.type != null).toList();
         offset = limit;
         hasMore = data.length == limit;
       });
@@ -65,6 +84,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       print("ERROR: $e");
     }
   }
+
   Future<void> loadMore() async {
     if (isLoadingMore || !hasMore) return;
 
@@ -88,12 +108,40 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     isLoadingMore = false;
   }
+  Future<void> loadFilterValues() async {
+    final res = await HistoryFilterService.filter();
 
+    setState(() {
+      endpoints = List<String>.from(
+        res["available_filter_values"]["endpoints"] ?? [],
+      );
+
+      actionTypes = List<String>.from(
+        res["available_filter_values"]["action_types"] ?? [],
+      );
+    });
+  }
+  Future<void> deleteSelected() async {
+    if (selectedIds.isEmpty) return;
+
+    try {
+      await ApiService.deleteHistory(selectedIds.toList());
+
+      setState(() {
+        filtered.removeWhere((e) => selectedIds.contains(e.id));
+        history.removeWhere((e) => selectedIds.contains(e.id));
+        selectedIds.clear();
+        isSelectMode = false;
+      });
+
+    } catch (e) {
+      print("DELETE ERROR: $e");
+    }
+  }
   String formatTime(double timestamp) {
     final date =
     DateTime.fromMillisecondsSinceEpoch((timestamp * 1000).toInt());
-    return "${date.hour}:${date.minute} | ${date.day}/${date.month}/${date
-        .year}";
+    return "${date.hour}:${date.minute} | ${date.day}/${date.month}/${date.year}";
   }
 
   String buildImageUrl(String path) {
@@ -108,45 +156,58 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (type == null) return "UNKNOWN";
 
     final t = type.trim().toLowerCase();
-
     return HistoryScreen.typeMap[t] ?? type;
   }
 
   Color getColor(String? type) {
     if (type == null) return Colors.black;
-
-    if (type.contains("pedestrian")) return Colors.green;
-    if (type.contains("motor")) return Colors.blue;
-
     return Colors.black;
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Lịch Sử"),
+        title: const Text("Lịch Sử"),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () {
             Navigator.pushAndRemoveUntil(
               context,
-              MaterialPageRoute(builder: (_) => HomeMenu()),
+              MaterialPageRoute(builder: (_) => const SettingsScreen()),
                   (route) => false,
             );
           },
         ),
+          actions: [
+            if (isSelectMode) ...[
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () {
+                  setState(() {
+                    isSelectMode = false;
+                    selectedIds.clear();
+                  });
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: deleteSelected,
+              ),
+            ]
+          ]
       ),
 
-      /// 🔥 FULL SCREEN BODY
       body: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           children: [
-
-
-            SizedBox(height: 12),
-
             /// LIST
             Expanded(
               child: ListView.builder(
@@ -154,7 +215,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 itemCount: filtered.length + (hasMore ? 1 : 0),
                 itemBuilder: (context, index) {
 
-                  // 🔥 loading item cuối
+                  /// loading cuối
                   if (index == filtered.length) {
                     return const Center(
                       child: Padding(
@@ -170,86 +231,122 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ? item.plates.first
                       : "KHÔNG XÁC ĐỊNH";
 
-                  print("TYPE = ${item.type}");
+                  return GestureDetector(
+                    onLongPress: () {
+                      setState(() {
+                        isSelectMode = true;
+                        selectedIds.add(item.id);
+                      });
+                    },
+                    onTap: () async {
+                      if (isSelectMode) {
+                        setState(() {
+                          if (selectedIds.contains(item.id)) {
+                            selectedIds.remove(item.id);
+                          } else {
+                            selectedIds.add(item.id);
+                          }
+                        });
+                      } else {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => HistoryDetailScreen(id: item.id),
+                          ),
+                        );
+                        if (result == true) {
+                          loadHistory();
+                        }
+                      }
+                    },
 
-                  return Container(
-                    margin: const EdgeInsets.symmetric(vertical: 6),
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 4,
-                        )
-                      ],
-                    ),
 
-                    child: Row(
-                      children: [
-
-                        /// IMAGE
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: imagePath != null && imagePath.isNotEmpty
-                              ? Image.network(
-                            buildImageUrl(imagePath),
-                            width: 90,
-                            height: 90,
-                            fit: BoxFit.cover,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 4,
                           )
-                              : Container(
-                            width: 90,
-                            height: 90,
-                            color: Colors.grey[300],
-                            child: const Icon(Icons.image),
+                        ],
+                      ),
+
+                      child: Row(
+                        children: [
+                          // CHECKBOX (chỉ hiện khi select mode)
+                          if (isSelectMode)
+                            Checkbox(
+                              value: selectedIds.contains(item.id),
+                              onChanged: (value) {
+                                setState(() {
+                                  if (value == true) {
+                                    selectedIds.add(item.id);
+                                  } else {
+                                    selectedIds.remove(item.id);
+                                  }
+                                });
+                              },
+                            ),
+                          /// IMAGE
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: imagePath != null && imagePath.isNotEmpty
+                                ? Image.network(
+                              buildImageUrl(imagePath),
+                              width: 90,
+                              height: 90,
+                              fit: BoxFit.cover,
+                            )
+                                : Container(
+                              width: 90,
+                              height: 90,
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.image),
+                            ),
                           ),
-                        ),
 
-                        const SizedBox(width: 12),
+                          const SizedBox(width: 12),
 
-                        /// TEXT INFO
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
+                          /// TEXT
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                              children: [
 
-                              /// TYPE
-                              Text(
-                                getTitle(item.type),
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                  color: getColor(item.type),
+                                Text(
+                                  getTitle(item.type),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
                                 ),
-                              ),
 
-                              const SizedBox(height: 6),
+                                const SizedBox(height: 6),
 
-                              /// PLATE
-                              Text(
-                                plate,
-                                style: const TextStyle(fontSize: 14),
-                              ),
-
-                              const SizedBox(height: 6),
-
-                              /// TIME
-                              Text(
-                                formatTime(item.timestamp),
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
+                                Text(
+                                  plate,
+                                  style: const TextStyle(fontSize: 14),
                                 ),
-                              ),
-                            ],
+
+                                const SizedBox(height: 6),
+
+                                Text(
+                                  formatTime(item.timestamp),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-
-                        /// ICON
-                        const Icon(Icons.chevron_right),
-                      ],
+                        ],
+                      ),
                     ),
                   );
                 },
@@ -260,11 +357,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("TỔNG SỐ LƯỢNG: ${filtered.length}"),
-                ElevatedButton(
-                  onPressed: () {},
-                  child: Text("TẢI VỀ"),
-                ),
+                Text("TỔNG SỐ: ${filtered.length}"),
               ],
             )
           ],
