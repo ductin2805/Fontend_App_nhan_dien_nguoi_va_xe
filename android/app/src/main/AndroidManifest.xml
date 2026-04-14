@@ -6,7 +6,7 @@
     <!-- QUYỀN ĐỌC ẢNH -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <application
-        android:label="ai_traffic_app"
+        android:label="AI Traffic"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
 
