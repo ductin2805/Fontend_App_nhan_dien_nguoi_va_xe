@@ -178,11 +178,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                  (route) => false,
-            );
+            Navigator.pop(context);
           },
         ),
           actions: [

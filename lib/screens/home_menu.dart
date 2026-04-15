@@ -125,11 +125,9 @@ class _HomeMenuState extends State<HomeMenu> {
           }
 
           if (i == 1) {
-            Navigator.pushReplacement(
+            Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => HistoryScreen(),
-              ),
+              MaterialPageRoute(builder: (_) => HistoryScreen()),
             );
           }
 

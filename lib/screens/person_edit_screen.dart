@@ -35,6 +35,7 @@ class _PersonEditScreenState extends State<PersonEditScreen> {
 
     return "$baseUrl/$path";
   }
+
   @override
   void initState() {
     super.initState();
@@ -111,18 +112,32 @@ class _PersonEditScreenState extends State<PersonEditScreen> {
         "date_of_birth": dobCtrl.text,
         "cccd": cccdCtrl.text,
       });
-
+      print({
+        "name": nameCtrl.text,
+        "person_code": codeCtrl.text,
+        "department": departmentCtrl.text,
+        "role": roleCtrl.text,
+        "phone": phoneCtrl.text,
+        "address": addressCtrl.text,
+        "age": ageCtrl.text,
+        "date_of_birth": dobCtrl.text,
+        "cccd": cccdCtrl.text,
+      });
       final res = await request.send();
+      final body = await res.stream.bytesToString();
+
+      print("STATUS: ${res.statusCode}");
+      print("BODY: $body");
 
       if (res.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Cập nhật thành công")),
         );
-
         Navigator.pop(context, true);
       } else {
         throw Exception("Update failed");
       }
+
 
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
