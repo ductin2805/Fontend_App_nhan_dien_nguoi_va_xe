@@ -18,30 +18,27 @@ class _PlateScreenState extends State<PlateScreen> {
   Uint8List? resultImage;
   double? imageRatio;
   bool isLoading = false;
-
-  List plates = [];
+  Set<int> expandedItems = {};
+  List vehicles = [];
   int totalVehicles = 0;
 
   IconData getVehicleIcon(String type) {
     switch (type.toLowerCase()) {
       case "car":
         return Icons.directions_car;
-
       case "truck":
         return Icons.local_shipping;
-
       case "motorcycle":
       case "motorbike":
       case "moto":
         return Icons.two_wheeler;
-
       case "bus":
         return Icons.directions_bus;
-
       default:
-        return Icons.directions_car; // fallback
+        return Icons.directions_car;
     }
   }
+
   // 📸 chọn ảnh
   Future pickImage() async {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
@@ -51,7 +48,7 @@ class _PlateScreenState extends State<PlateScreen> {
         image = File(picked.path);
         resultImage = null;
         imageRatio = null;
-        plates = [];
+        vehicles = [];
         totalVehicles = 0;
       });
     }
@@ -74,29 +71,13 @@ class _PlateScreenState extends State<PlateScreen> {
         endpoint: "detect-plates",
       );
 
-      if (data["error"] != null) {
-        throw Exception(data["error"]);
-      }
-
       Uint8List bytes = base64Decode(data["image"]);
       final decoded = await decodeImageFromList(bytes);
-
-      // 🔥 LẤY DATA ĐÚNG
-      List vehicles = data["vehicles"] ?? [];
-
-      List detectedPlates = vehicles
-          .where((v) => v["plate"]?["detected"] == true)
-          .map((v) => {
-        "text": v["plate"]["text"],
-        "confidence": v["plate"]["confidence"],
-        "type": v["class_name"],
-      })
-          .toList();
 
       setState(() {
         resultImage = bytes;
         imageRatio = decoded.width / decoded.height;
-        plates = detectedPlates;
+        vehicles = data["vehicles"] ?? [];
         totalVehicles = data["total_vehicles"] ?? 0;
       });
 
@@ -109,9 +90,9 @@ class _PlateScreenState extends State<PlateScreen> {
     setState(() => isLoading = false);
   }
 
-  // 🔧 làm sạch biển số
-  String cleanPlate(String text) {
-    return text.replaceAll(RegExp(r'[^A-Z0-9.]'), '');
+  String v(dynamic value) {
+    if (value == null || value.toString().isEmpty) return "Không có";
+    return value.toString();
   }
 
   @override
@@ -133,10 +114,7 @@ class _PlateScreenState extends State<PlateScreen> {
             Center(child: Image.file(image!, fit: BoxFit.contain))
           else
             const Center(
-              child: Text(
-                "Chưa chọn ảnh",
-                style: TextStyle(color: Colors.white),
-              ),
+              child: Text("Chưa chọn ảnh", style: TextStyle(color: Colors.white)),
             ),
 
           // 🔙 BACK
@@ -156,7 +134,7 @@ class _PlateScreenState extends State<PlateScreen> {
               child: const Center(child: CircularProgressIndicator()),
             ),
 
-          // 📦 CARD KẾT QUẢ
+          // 📦 RESULT
           if (resultImage != null)
             Positioned(
               bottom: 120,
@@ -182,60 +160,123 @@ class _PlateScreenState extends State<PlateScreen> {
 
                     const SizedBox(height: 10),
 
-                    if (plates.isEmpty)
-                      const Text("Không phát hiện biển số"),
+                    if (vehicles.isEmpty)
+                      const Text("Không phát hiện"),
 
-                    ...plates.map((p) {
-                      final text = cleanPlate(p["text"] ?? "");
-                      final conf = ((p["confidence"] ?? 0) * 100);
-                      final type = p["type"] ?? "vehicle";
+                    ...vehicles.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final vcl = entry.value;
 
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
+                      final plate = vcl["plate"];
+                      final owner = plate?["owner"];
+                      final info = owner?["info"] ?? {};
 
-                            Icon(
-                              getVehicleIcon(type),
-                              color: Colors.blue,
-                            ),
+                      final plateText = plate?["text"] ?? "Không rõ";
+                      final confidence = (plate?["confidence"] ?? 0) * 100;
+                      final type = vcl["class_name"] ?? "vehicle";
 
-                            const SizedBox(width: 10),
+                      final isExpanded = expandedItems.contains(index);
 
-                            Expanded(
-                              child: Text(
-                                text.isEmpty ? "Không rõ" : text,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            if (isExpanded) {
+                              expandedItems.remove(index);
+                            } else {
+                              expandedItems.add(index);
+                            }
+                          });
+                        },
+
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+
+                              // 🔹 HEADER (LUÔN HIỆN)
+                              Row(
+                                children: [
+                                  Icon(getVehicleIcon(type), color: Colors.blue),
+                                  const SizedBox(width: 8),
+
+                                  Expanded(
+                                    child: Text(
+                                      plateText,
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+
+                                  Text(
+                                    "${confidence.toStringAsFixed(1)}%",
+                                    style: TextStyle(
+                                      color: confidence > 60
+                                          ? Colors.green
+                                          : Colors.orange,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+
+                                  const SizedBox(width: 6),
+
+                                  Icon(
+                                    isExpanded
+                                        ? Icons.keyboard_arrow_up
+                                        : Icons.keyboard_arrow_down,
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 6),
+
+                              Text(
+                                "👤 ${v(owner?["name"])}",
+                                style: const TextStyle(fontWeight: FontWeight.w500),
+                              ),
+
+                              // 🔥 PHẦN MỞ RỘNG
+                              AnimatedCrossFade(
+                                duration: const Duration(milliseconds: 300),
+                                crossFadeState: isExpanded
+                                    ? CrossFadeState.showSecond
+                                    : CrossFadeState.showFirst,
+
+                                firstChild: const SizedBox(),
+
+                                secondChild: Column(
+                                  children: [
+                                    const Divider(),
+
+                                    _row("SĐT", info["phone"]),
+                                    _row("Địa chỉ", info["address"]),
+                                    _row("Ngày sinh", info["date_of_birth"]),
+                                    _row("CCCD", info["cccd"]),
+                                    _row("Phòng ban", info["department"]),
+                                    _row("Chức vụ", info["role"]),
+                                  ],
                                 ),
                               ),
-                            ),
-
-                            Text(
-                              "${conf.toStringAsFixed(1)}%",
-                              style: TextStyle(
-                                color: conf > 50
-                                    ? Colors.green
-                                    : Colors.orange,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       );
-                    }),
+                    }).toList(),
                   ],
                 ),
               ),
             ),
 
-          // 🔘 BOTTOM BAR
+          // 🔘 BOTTOM
           Positioned(
             bottom: 20,
             left: 20,
@@ -265,10 +306,7 @@ class _PlateScreenState extends State<PlateScreen> {
                         color: Colors.blue[900],
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.camera_alt,
-                        color: Colors.white,
-                      ),
+                      child: const Icon(Icons.camera_alt, color: Colors.white),
                     ),
                   ),
 
@@ -280,7 +318,7 @@ class _PlateScreenState extends State<PlateScreen> {
                         image = null;
                         resultImage = null;
                         imageRatio = null;
-                        plates = [];
+                        vehicles = [];
                         totalVehicles = 0;
                       });
                     },
@@ -288,6 +326,24 @@ class _PlateScreenState extends State<PlateScreen> {
                 ],
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _row(String title, dynamic value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(title),
+          Text(
+            value == null || value.toString().isEmpty
+                ? "Không có"
+                : value.toString(),
+            style: const TextStyle(fontWeight: FontWeight.bold),
           ),
         ],
       ),

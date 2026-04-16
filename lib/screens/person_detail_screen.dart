@@ -99,6 +99,8 @@ class PersonDetailScreen extends StatelessWidget {
                   item("Tuổi", info.age),
                   item("Ngày sinh", info.dob),
                   item("CCCD", info.cccd),
+                  item("Biển số xe", info.plateNumber),
+                  item("Biển số máy", info.vehiclePlates),
                 ],
               ),
             ),

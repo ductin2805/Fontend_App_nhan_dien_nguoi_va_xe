@@ -35,7 +35,8 @@ class PersonInfo {
   final String age;
   final String dob;
   final String cccd;
-
+  final String plateNumber;
+  final String vehiclePlates;
   PersonInfo({
     required this.department,
     required this.role,
@@ -44,6 +45,8 @@ class PersonInfo {
     required this.age,
     required this.dob,
     required this.cccd,
+    required this.plateNumber,
+    required this.vehiclePlates,
   });
 
   factory PersonInfo.fromJson(Map<String, dynamic> json) {
@@ -55,6 +58,8 @@ class PersonInfo {
       age: json["age"] ?? "",
       dob: json["date_of_birth"] ?? "",
       cccd: json["cccd"] ?? "",
+      plateNumber: json["plate_number"] ?? "",
+      vehiclePlates: json["vehicle_plates"] ?? "",
     );
   }
 }

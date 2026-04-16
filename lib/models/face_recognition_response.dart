@@ -3,6 +3,7 @@ class FaceRecognitionResponse {
   final double threshold;
   final String annotatedImage;
   final List<FaceData> faces;
+
   FaceRecognitionResponse({
     required this.totalFaces,
     required this.threshold,
@@ -21,17 +22,22 @@ class FaceRecognitionResponse {
     );
   }
 }
+
+// ================= FACE =================
 class FaceData {
   final List<int> bbox;
   final bool isKnown;
   final double matchScore;
+
   final PersonData? person;
+  final List<PersonData> topMatches;
 
   FaceData({
     required this.bbox,
     required this.isKnown,
     required this.matchScore,
     this.person,
+    required this.topMatches,
   });
 
   factory FaceData.fromJson(Map<String, dynamic> json) {
@@ -42,20 +48,29 @@ class FaceData {
       person: json['person'] != null
           ? PersonData.fromJson(json['person'])
           : null,
+      topMatches: (json['top_matches'] as List? ?? [])
+          .map((e) => PersonData.fromJson(e))
+          .toList(),
     );
   }
 }
+
+// ================= PERSON =================
 class PersonData {
   final String personId;
   final String name;
   final String personCode;
   final PersonInfo info;
+  final double matchScore;
+  final bool isKnown;
 
   PersonData({
     required this.personId,
     required this.name,
     required this.personCode,
     required this.info,
+    required this.matchScore,
+    required this.isKnown,
   });
 
   factory PersonData.fromJson(Map<String, dynamic> json) {
@@ -64,9 +79,13 @@ class PersonData {
       name: json['name'] ?? "",
       personCode: json['person_code'] ?? "",
       info: PersonInfo.fromJson(json['info'] ?? {}),
+      matchScore: (json['match_score'] ?? 0).toDouble(),
+      isKnown: json['is_known'] ?? false,
     );
   }
 }
+
+// ================= INFO =================
 class PersonInfo {
   final String department;
   final String role;
@@ -75,7 +94,8 @@ class PersonInfo {
   final String age;
   final String dateOfBirth;
   final String cccd;
-
+  final String plateNumber;
+  final String vehiclePlates;
   PersonInfo({
     required this.department,
     required this.role,
@@ -84,6 +104,8 @@ class PersonInfo {
     required this.age,
     required this.dateOfBirth,
     required this.cccd,
+    required this.plateNumber,
+    required this.vehiclePlates,
   });
 
   factory PersonInfo.fromJson(Map<String, dynamic> json) {
@@ -95,6 +117,8 @@ class PersonInfo {
       age: json['age'] ?? "",
       dateOfBirth: json['date_of_birth'] ?? "",
       cccd: json['cccd'] ?? "",
+      vehiclePlates: json['vehicle_plates'] ?? "",
+      plateNumber: json['plate_number'] ?? "",
     );
   }
 }

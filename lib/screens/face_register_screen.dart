@@ -23,7 +23,8 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen> {
   final addressCtrl = TextEditingController();
   final ageCtrl = TextEditingController();
   final dobCtrl = TextEditingController();
-
+  final plateNumberCtrl = TextEditingController();
+  final vehiclePlatesCtrl = TextEditingController();
   FaceRegisterResponse? result;
   String? previewBase64;
 
@@ -56,6 +57,7 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen> {
     if (error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error)),
+
       );
       return;
     }
@@ -79,6 +81,8 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen> {
           "age": ageCtrl.text,
           "date_of_birth": dobCtrl.text,
           "cccd": cccdCtrl.text,
+          "plate_number": plateNumberCtrl.text,
+          "vehicle_plates": vehiclePlatesCtrl.text,
         },
       );
 
@@ -143,15 +147,25 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen> {
     /// 📅 Ngày sinh: yyyy-MM-dd
     if (dob.isNotEmpty) {
       try {
-        final date = DateTime.parse(dob);
+        final parts = dob.split('/'); // dd/MM/yyyy
+
+        if (parts.length != 3) {
+          return "Ngày sinh không hợp lệ";
+        }
+
+        final day = int.parse(parts[0]);
+        final month = int.parse(parts[1]);
+        final year = int.parse(parts[2]);
+
+        final date = DateTime(year, month, day);
+
         if (date.isAfter(DateTime.now())) {
           return "Ngày sinh không hợp lệ";
         }
       } catch (_) {
-        return "Ngày sinh phải đúng định dạng yyyy-MM-dd";
+        return "Ngày sinh phải đúng định dạng dd/MM/yyyy";
       }
     }
-
     return null; // ✅ hợp lệ
   }
   @override
@@ -208,7 +222,8 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen> {
               ),
             ),
             input("CCCD", cccdCtrl, type: TextInputType.number),
-
+            input("Biển số chính", plateNumberCtrl),
+            input("Biển số phụ (cách nhau , hoặc ;)", vehiclePlatesCtrl),
             const SizedBox(height: 10),
 
             ElevatedButton(

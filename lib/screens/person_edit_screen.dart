@@ -23,6 +23,8 @@ class _PersonEditScreenState extends State<PersonEditScreen> {
   late TextEditingController ageCtrl;
   late TextEditingController dobCtrl;
   late TextEditingController cccdCtrl;
+  late TextEditingController plateNumberCtrl;
+  late TextEditingController vehiclePlatesCtrl;
   File? newImage;
   final baseUrl = "http://192.168.1.11:8000";
   bool loading = false;
@@ -51,6 +53,8 @@ class _PersonEditScreenState extends State<PersonEditScreen> {
     ageCtrl = TextEditingController(text: p.info.age);
     dobCtrl = TextEditingController(text: p.info.dob);
     cccdCtrl = TextEditingController(text: p.info.cccd);
+    plateNumberCtrl = TextEditingController(text: p.info.plateNumber);
+    vehiclePlatesCtrl = TextEditingController(text: p.info.vehiclePlates);
   }
 
   Widget input(String hint, TextEditingController ctrl,
@@ -69,24 +73,95 @@ class _PersonEditScreenState extends State<PersonEditScreen> {
       ),
     );
   }
+  Future<void> pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(2000),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
 
+    if (picked != null) {
+      final day = picked.day.toString().padLeft(2, '0');
+      final month = picked.month.toString().padLeft(2, '0');
+      final year = picked.year;
+
+      dobCtrl.text = "$day/$month/$year";
+    }
+  }
   String? validate() {
-    if (nameCtrl.text.isEmpty) return "Tên không được bỏ trống";
+    final name = nameCtrl.text.trim();
+    final phone = phoneCtrl.text.trim();
+    final cccd = cccdCtrl.text.trim();
+    final age = ageCtrl.text.trim();
+    final dob = dobCtrl.text.trim();
 
-    if (phoneCtrl.text.isNotEmpty &&
-        !RegExp(r'^\d{10}$').hasMatch(phoneCtrl.text)) {
-      return "SĐT phải 10 số";
+
+    /// 🧑 Tên
+    if (name.isEmpty) {
+      return "Tên không được bỏ trống";
     }
 
-    if (cccdCtrl.text.isNotEmpty &&
-        !RegExp(r'^\d{12}$').hasMatch(cccdCtrl.text)) {
-      return "CCCD phải 12 số";
+    /// 📱 SĐT: 10 số
+    if (phone.isNotEmpty && !RegExp(r'^\d{10}$').hasMatch(phone)) {
+      return "SĐT phải đúng 10 số";
+    }
+
+    /// 🆔 CCCD: 12 số
+    if (cccd.isNotEmpty && !RegExp(r'^\d{12}$').hasMatch(cccd)) {
+      return "CCCD phải đúng 12 số";
+    }
+
+    /// 🎂 Tuổi
+    if (age.isNotEmpty) {
+      final a = int.tryParse(age);
+      if (a == null || a <= 0 || a > 120) {
+        return "Tuổi không hợp lệ";
+      }
+    }
+
+    /// 📅 Ngày sinh: dd/MM/yyyy
+    if (dob.isNotEmpty) {
+      try {
+        final parts = dob.split('/');
+
+        if (parts.length != 3) {
+          return "Ngày sinh phải đúng định dạng dd/MM/yyyy";
+        }
+
+        final day = int.parse(parts[0]);
+        final month = int.parse(parts[1]);
+        final year = int.parse(parts[2]);
+
+        final date = DateTime(year, month, day);
+
+        /// check ngày hợp lệ (ví dụ 31/02 sẽ fail)
+        if (date.day != day || date.month != month || date.year != year) {
+          return "Ngày sinh không hợp lệ";
+        }
+
+        if (date.isAfter(DateTime.now())) {
+          return "Ngày sinh không hợp lệ";
+        }
+
+      } catch (_) {
+        return "Ngày sinh phải đúng định dạng dd/MM/yyyy";
+      }
     }
 
     return null;
   }
 
   Future<void> update() async {
+    final error = validate();
+
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
+      return;
+    }
+
     setState(() => loading = true);
 
     try {
@@ -103,7 +178,6 @@ class _PersonEditScreenState extends State<PersonEditScreen> {
 
       request.fields.addAll({
         "name": nameCtrl.text,
-        "person_code": codeCtrl.text,
         "department": departmentCtrl.text,
         "role": roleCtrl.text,
         "phone": phoneCtrl.text,
@@ -111,18 +185,10 @@ class _PersonEditScreenState extends State<PersonEditScreen> {
         "age": ageCtrl.text,
         "date_of_birth": dobCtrl.text,
         "cccd": cccdCtrl.text,
+        "plate_number": plateNumberCtrl.text,
+        "vehicle_plates": vehiclePlatesCtrl.text,
       });
-      print({
-        "name": nameCtrl.text,
-        "person_code": codeCtrl.text,
-        "department": departmentCtrl.text,
-        "role": roleCtrl.text,
-        "phone": phoneCtrl.text,
-        "address": addressCtrl.text,
-        "age": ageCtrl.text,
-        "date_of_birth": dobCtrl.text,
-        "cccd": cccdCtrl.text,
-      });
+
       final res = await request.send();
       final body = await res.stream.bytesToString();
 
@@ -197,13 +263,28 @@ class _PersonEditScreenState extends State<PersonEditScreen> {
             avatar(),
             const SizedBox(height: 16),
             input("Tên", nameCtrl),
-            input("Mã nhân sự", codeCtrl),
             input("Phòng ban", departmentCtrl),
             input("Chức vụ", roleCtrl),
             input("SĐT", phoneCtrl, type: TextInputType.number),
             input("Địa chỉ", addressCtrl),
             input("Tuổi", ageCtrl, type: TextInputType.number),
-            input("Ngày sinh (yyyy-MM-dd)", dobCtrl),
+            input("Biển số chính", plateNumberCtrl),
+            input("Biển số khác", vehiclePlatesCtrl),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: TextField(
+                controller: dobCtrl,
+                readOnly: true, // 👈 chặn nhập tay
+                onTap: pickDate, // 👈 mở calendar
+                decoration: InputDecoration(
+                  hintText: "Ngày sinh (dd/MM/yyyy)",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  suffixIcon: const Icon(Icons.calendar_today),
+                ),
+              ),
+            ),
             input("CCCD", cccdCtrl, type: TextInputType.number),
 
             const SizedBox(height: 16),

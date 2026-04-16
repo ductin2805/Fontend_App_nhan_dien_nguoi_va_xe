@@ -23,7 +23,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen> {
 
   List<FaceData> faces = [];
   int totalFaces = 0;
-
+  int currentMatchIndex = 0;
   // 📸 chọn ảnh
   Future pickImage() async {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
@@ -66,6 +66,7 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen> {
         imageRatio = decoded.width / decoded.height;
         faces = response.faces;
         totalFaces = response.totalFaces;
+        currentMatchIndex = 0; // reset index đúng chỗ
       });
 
     } catch (e) {
@@ -148,79 +149,125 @@ class _FaceRecognitionScreenState extends State<FaceRecognitionScreen> {
                     if (faces.isEmpty)
                       const Text("Không phát hiện khuôn mặt"),
 
-                    ...faces.map((face) {
-                      final isKnown = face.isKnown;
-                      final score = face.matchScore * 100;
-                      final person = face.person;
+                    if (faces.isNotEmpty) ...[
+                      Builder(
+                        builder: (context) {
+                          final face = faces.first;
+                          final matches = face.topMatches;
 
-                      return GestureDetector(
-                        onTap: () {
-                          if (isKnown && person != null) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => FaceDetailScreen(
-                                  face: face,
-                                  imageBytes: resultImage!,
-                                ),
-                              ),
-                            );
+                          if (matches.isEmpty) {
+                            return const Text("Không có dữ liệu nhận diện");
                           }
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+
+                          final person = matches[currentMatchIndex];
+                          final score = person.matchScore * 100;
+
+                          return Column(
                             children: [
 
+                              // 🔁 NÚT CHUYỂN
                               Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Icon(
-                                    isKnown ? Icons.verified : Icons.person,
-                                    color: isKnown ? Colors.green : Colors.grey,
-                                  ),
-                                  const SizedBox(width: 8),
-
-                                  Expanded(
-                                    child: Text(
-                                      isKnown && person != null
-                                          ? person.name
-                                          : "Người lạ",
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
+                                  IconButton(
+                                    onPressed: currentMatchIndex > 0
+                                        ? () {
+                                      setState(() {
+                                        currentMatchIndex--;
+                                      });
+                                    }
+                                        : null,
+                                    icon: const Icon(Icons.arrow_left),
                                   ),
 
                                   Text(
-                                    "${score.toStringAsFixed(1)}%",
-                                    style: TextStyle(
-                                      color: score > 70
-                                          ? Colors.green
-                                          : Colors.orange,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                    "${currentMatchIndex + 1} / ${matches.length}",
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+
+                                  IconButton(
+                                    onPressed: currentMatchIndex < matches.length - 1
+                                        ? () {
+                                      setState(() {
+                                        currentMatchIndex++;
+                                      });
+                                    }
+                                        : null,
+                                    icon: const Icon(Icons.arrow_right),
                                   ),
                                 ],
                               ),
 
-                              if (isKnown && person != null) ...[
-                                const SizedBox(height: 6),
-                                Text("Số điện thoại : ${person.info.phone}"),
-                                Text("Ngày Sinh: ${person.info.dateOfBirth}"),
-                                Text("CCCD: ${person.info.cccd}"),
-                              ],
+                              const SizedBox(height: 10),
+
+                              // 👤 CARD (CÓ CLICK)
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => FaceDetailScreen(
+                                        person: person, // 👈 truyền đúng người đang chọn
+                                        imageBytes: resultImage!,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[100],
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            person.isKnown ? Icons.verified : Icons.person,
+                                            color: person.isKnown ? Colors.green : Colors.grey,
+                                          ),
+                                          const SizedBox(width: 8),
+
+                                          Expanded(
+                                            child: Text(
+                                              person.name,
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+
+                                          Text(
+                                            "${score.toStringAsFixed(1)}%",
+                                            style: TextStyle(
+                                              color: score > 70
+                                                  ? Colors.green
+                                                  : Colors.orange,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+
+                                      const SizedBox(height: 6),
+
+                                      Text("Mã: ${person.personCode}"),
+                                      Text("SĐT: ${person.info.phone}"),
+                                      Text("Ngày sinh: ${person.info.dateOfBirth}"),
+                                      Text("CCCD: ${person.info.cccd}"),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ],
-                          ),
-                        ),
-                      );
-                    }),
+                          );
+                        },
+                      )
+                    ]
                   ],
                 ),
               ),

@@ -17,7 +17,23 @@ class RealtimeCameraScreen extends StatefulWidget {
   State<RealtimeCameraScreen> createState() =>
       _RealtimeCameraScreenState();
 }
-
+Widget _tabItem({
+  required IconData icon,
+  required String label,
+  required VoidCallback onTap,
+}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(fontSize: 12)),
+      ],
+    ),
+  );
+}
 class _RealtimeCameraScreenState extends State<RealtimeCameraScreen> {
   final RecognitionService _service = RecognitionService();
   final ImagePicker _picker = ImagePicker();
@@ -146,6 +162,7 @@ class _RealtimeCameraScreenState extends State<RealtimeCameraScreen> {
               },
             ),
           ),
+
           /// 🎬 VIDEO
           if (_controller != null && _controller!.value.isInitialized)
             Center(
@@ -342,18 +359,23 @@ class _RealtimeCameraScreenState extends State<RealtimeCameraScreen> {
             left: 20,
             right: 20,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+              padding: const EdgeInsets.symmetric( vertical: 12),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(40),
+                borderRadius: BorderRadius.circular(30),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  GestureDetector(
+
+                  // 📂 CHỌN VIDEO
+                  _tabItem(
+                    icon: Icons.video_library,
+                    label: "Chọn video",
                     onTap: _pickAndUploadVideo,
-                    child: const Icon(Icons.image),
                   ),
+
+                  // 🎯 PHÂN TÍCH
                   GestureDetector(
                     onTap: () {
                       if (_result == null || _result!.plates.isEmpty) {
@@ -371,19 +393,21 @@ class _RealtimeCameraScreenState extends State<RealtimeCameraScreen> {
                       );
                     },
                     child: Container(
-                      width: 60,
-                      height: 60,
+                      width: 70,
+                      height: 70,
                       decoration: BoxDecoration(
                         color: Colors.blue[900],
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.camera_alt,
-                          color: Colors.white),
+                      child: const Icon(Icons.analytics, color: Colors.white),
                     ),
                   ),
-                  GestureDetector(
+
+                  // 🔄 RESET
+                  _tabItem(
+                    icon: Icons.refresh,
+                    label: "Reset",
                     onTap: _reset,
-                    child: const Icon(Icons.refresh),
                   ),
                 ],
               ),

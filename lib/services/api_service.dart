@@ -119,7 +119,7 @@ class ApiService {
     }
   }
   static Future<void> deleteAllHistory() async {
-    final uri = Uri.parse("http://192.168.1.11:8000/history/all");
+    final uri = Uri.parse("$baseUrl/history/all");
 
     final res = await http.delete(uri);
 
@@ -128,7 +128,7 @@ class ApiService {
     }
   }
   static Future<List<Person>> getPersons() async {
-    final uri = Uri.parse("http://192.168.1.11:8000/face/persons");
+    final uri = Uri.parse("$baseUrl/face/persons");
 
     final res = await http.get(uri);
 
@@ -144,7 +144,7 @@ class ApiService {
     required File file,
     required Map<String, String> fields,
   }) async {
-    final uri = Uri.parse("http://192.168.1.11:8000/face/register");
+    final uri = Uri.parse("$baseUrl/face/register");
 
     final request = http.MultipartRequest("POST", uri);
 
@@ -162,7 +162,7 @@ class ApiService {
     return FaceRegisterResponse.fromJson(data);
   }
   static Future<void> deletePerson(String personId) async {
-    final uri = Uri.parse("http://192.168.1.11:8000/face/person/$personId");
+    final uri = Uri.parse("$baseUrl/face/person/$personId");
 
     final res = await http.delete(uri);
 
@@ -174,7 +174,7 @@ class ApiService {
     required String personId,
     required Map<String, dynamic> body,
   }) async {
-    final uri = Uri.parse("http://192.168.1.11:8000/face/person/$personId");
+    final uri = Uri.parse("$baseUrl/face/person/$personId");
 
     final res = await http.put(
       uri,

@@ -7,7 +7,8 @@ class FaceRegisterResponse {
   final int samples;
   final String backend;
   final String imageBase64;
-
+  final String plateNumber;
+  final String vehiclePlates;
   FaceRegisterResponse({
     required this.personId,
     required this.name,
@@ -17,6 +18,8 @@ class FaceRegisterResponse {
     required this.samples,
     required this.backend,
     required this.imageBase64,
+    required this.plateNumber,
+    required this.vehiclePlates,
   });
 
   factory FaceRegisterResponse.fromJson(Map<String, dynamic> json) {
@@ -29,6 +32,8 @@ class FaceRegisterResponse {
       samples: json["samples"] ?? 0,
       backend: json["embedding_backend"] ?? "",
       imageBase64: json["annotated_image"] ?? "",
+      plateNumber: json["plate_number"] ?? "",
+      vehiclePlates: json["vehicle_plates"] ?? "",
     );
   }
 }
