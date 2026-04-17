@@ -1,10 +1,9 @@
-import 'package:ai_traffic_app/screens/setting_screen.dart';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/history_item.dart';
 import '../services/history_filter_service.dart';
 import 'history_detail_screen.dart';
-import 'home_menu.dart';
+
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -39,7 +38,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   final ScrollController controller = ScrollController();
 
-  final String baseUrl = "http://192.168.1.11:8000";
 
   @override
   void initState() {
@@ -54,6 +52,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       }
     });
   }
+
   Future<void> applyFilter() async {
     final res = await HistoryFilterService.filter(
       endpoint: selectedEndpoint,
@@ -145,11 +144,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   String buildImageUrl(String path) {
-    path = path.trim();
-    if (path.startsWith("/")) {
-      path = path.substring(1);
-    }
-    return "$baseUrl/$path";
+    return ApiService.buildUrl(path);
   }
 
   String getTitle(String? type) {

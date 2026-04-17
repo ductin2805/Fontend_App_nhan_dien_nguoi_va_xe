@@ -23,17 +23,6 @@ class PersonDetailScreen extends StatelessWidget {
       ),
     );
   }
-  String buildImage(String path) {
-    const baseUrl = "http://192.168.1.11:8000";
-
-    if (path.isEmpty) return "";
-
-    if (path.startsWith("/")) {
-      return "$baseUrl$path";
-    }
-
-    return "$baseUrl/$path";
-  }
   @override
   Widget build(BuildContext context) {
     final info = person.info;
@@ -60,7 +49,7 @@ class PersonDetailScreen extends StatelessWidget {
                 radius: 55,
                 backgroundColor: Colors.grey.shade200,
                 backgroundImage: person.imagePath.isNotEmpty
-                    ? NetworkImage(buildImage(person.imagePath))
+                    ? NetworkImage(ApiService.buildUrl(person.imagePath))
                     : null,
                 child: person.imagePath.isEmpty
                     ? Text(

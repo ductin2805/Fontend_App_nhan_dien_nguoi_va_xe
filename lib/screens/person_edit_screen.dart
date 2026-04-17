@@ -26,18 +26,7 @@ class _PersonEditScreenState extends State<PersonEditScreen> {
   late TextEditingController plateNumberCtrl;
   late TextEditingController vehiclePlatesCtrl;
   File? newImage;
-  final baseUrl = "http://192.168.1.11:8000";
   bool loading = false;
-  String buildImage(String path) {
-    if (path.isEmpty) return "";
-
-    if (path.startsWith("/")) {
-      return "$baseUrl$path";
-    }
-
-    return "$baseUrl/$path";
-  }
-
   @override
   void initState() {
     super.initState();
@@ -165,7 +154,9 @@ class _PersonEditScreenState extends State<PersonEditScreen> {
     setState(() => loading = true);
 
     try {
-      final uri = Uri.parse("$baseUrl/face/person/${widget.person.personId}");
+      final uri = Uri.parse(
+          ApiService.buildUrl("/face/person/${widget.person.personId}"),
+      );
 
       final request = http.MultipartRequest("PUT", uri);
 
@@ -243,7 +234,7 @@ class _PersonEditScreenState extends State<PersonEditScreen> {
           backgroundImage: newImage != null
               ? FileImage(newImage!)
               : (oldImage.isNotEmpty
-              ? NetworkImage(buildImage(oldImage))
+              ? NetworkImage(ApiService.buildUrl(oldImage))
               : null),
           child: (newImage == null && oldImage.isEmpty)
               ? const Icon(Icons.person, size: 40)
@@ -268,8 +259,6 @@ class _PersonEditScreenState extends State<PersonEditScreen> {
             input("SĐT", phoneCtrl, type: TextInputType.number),
             input("Địa chỉ", addressCtrl),
             input("Tuổi", ageCtrl, type: TextInputType.number),
-            input("Biển số chính", plateNumberCtrl),
-            input("Biển số khác", vehiclePlatesCtrl),
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: TextField(
@@ -286,7 +275,8 @@ class _PersonEditScreenState extends State<PersonEditScreen> {
               ),
             ),
             input("CCCD", cccdCtrl, type: TextInputType.number),
-
+            input("Biển số chính", plateNumberCtrl),
+            input("Biển số khác", vehiclePlatesCtrl),
             const SizedBox(height: 16),
 
             SizedBox(

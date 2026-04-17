@@ -10,8 +10,16 @@ import '../models/person_model.dart';
 import '../models/person_update_response.dart';
 class ApiService {
 
-  static const String baseUrl = "http://192.168.1.11:8000";
+    static const String baseUrl = "http://192.168.1.11:8000";
+    static String buildUrl(String path) {
+      if (path.isEmpty) return "";
 
+      if (path.startsWith("/")) {
+        return "${dio.options.baseUrl}$path";
+      }
+
+      return "${dio.options.baseUrl}/$path";
+    }
   /// 🔥 gửi ảnh + chọn endpoint
   static Future<Map<String, dynamic>> sendImage(
       File image, {
@@ -47,17 +55,17 @@ class ApiService {
   }
   // 1. Khai báo biến dio static để các Service khác có thể gọi ApiService.dio
   static final Dio dio = Dio(
-    BaseOptions(
-      // 2. Thay đổi địa chỉ IP này cho đúng với server của bạn
-      baseUrl: 'http://192.168.1.11:8000',
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 60), // Tăng thời gian chờ vì xử lý video lâu
-      headers: {
-        'accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-    ),
+      BaseOptions(
+        baseUrl: baseUrl,
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 60),
+        headers: {
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      ),
   );
+
   // Bạn có thể thêm các interceptor để log lỗi hoặc thêm token nếu cần
   static void init() {
     dio.interceptors.add(LogInterceptor(responseBody: true, requestBody: true));

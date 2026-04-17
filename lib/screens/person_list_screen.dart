@@ -16,7 +16,6 @@ class _PersonListScreenState extends State<PersonListScreen> {
   List<Person> persons = [];
   bool loading = true;
 
-  final baseUrl = "http://192.168.1.11:8000";
 
   @override
   void initState() {
@@ -32,17 +31,7 @@ class _PersonListScreenState extends State<PersonListScreen> {
     });
   }
 
-  String buildImage(String path) {
-    if (path.isEmpty) return "";
 
-    final baseUrl = "http://192.168.1.11:8000";
-
-    if (path.startsWith("/")) {
-      return "$baseUrl$path";
-    }
-
-    return "$baseUrl/$path";
-  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,16 +61,18 @@ class _PersonListScreenState extends State<PersonListScreen> {
         itemCount: persons.length,
         itemBuilder: (_, i) {
           final p = persons[i];
-          print(buildImage(p.imagePath));
           return GestureDetector(
-            onTap: () {
-              Navigator.push(
+            onTap: () async {
+              final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                      PersonDetailScreen(person: p),
+                  builder: (_) => PersonDetailScreen(person: p),
                 ),
               );
+
+              if (result == true) {
+                load();
+              }
             },
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -102,7 +93,7 @@ class _PersonListScreenState extends State<PersonListScreen> {
                     radius: 28,
                     backgroundColor: Colors.blue.shade100,
                     backgroundImage: p.imagePath.isNotEmpty
-                        ? NetworkImage(buildImage(p.imagePath))
+                        ? NetworkImage(ApiService.buildUrl(p.imagePath))
                         : null,
                     child: p.imagePath.isEmpty
                         ? Text(

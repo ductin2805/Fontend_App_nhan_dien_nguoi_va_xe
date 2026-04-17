@@ -58,7 +58,6 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
 
     return plate;
   }
-  final String baseUrl = "http://192.168.1.11:8000";
 
   @override
   void initState() {
@@ -80,13 +79,6 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
     }
   }
 
-  String buildImageUrl(String path) {
-    path = path.trim();
-    if (path.startsWith("/")) {
-      path = path.substring(1);
-    }
-    return "$baseUrl/$path";
-  }
 
   /// 🔥 Không cho null lên UI
   String v(dynamic value) {
@@ -304,7 +296,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
             if (imagePath != null && imagePath.isNotEmpty)
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: Image.network(buildImageUrl(imagePath)),
+                child: Image.network(ApiService.buildUrl(imagePath)),
               ),
 
             const SizedBox(height: 16),
@@ -771,7 +763,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                           getTypeName: getTypeName,
                           translateKey: translateKey,
                           v: v,
-                          buildImageUrl: buildImageUrl,
+                          buildImageUrl: ApiService.buildUrl,
                         );
 
                         ScaffoldMessenger.of(context).showSnackBar(
