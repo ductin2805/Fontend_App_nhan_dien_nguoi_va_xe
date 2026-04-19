@@ -5,7 +5,6 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
-import '';
 import '../models/frame_result.dart';
 import '../models/recognition_response.dart';
 import '../services/recognition_service.dart';

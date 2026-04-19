@@ -5,6 +5,7 @@ import 'detection_screen.dart';
 import 'history_screen.dart';
 import 'plate_screen.dart';
 import 'realtime_camera_screen.dart';
+import 'chat_bot_sheet.dart';
 class HomeMenu extends StatefulWidget {
   const HomeMenu({super.key});
 
@@ -114,7 +115,46 @@ class _HomeMenuState extends State<HomeMenu> {
           )
         ],
       ),
-
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFF4facfe),
+              Color(0xFF00f2fe),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.blue.withOpacity(0.4),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: FloatingActionButton(
+          backgroundColor: Colors.transparent, // 🔥 để lộ gradient
+          elevation: 0,
+          child: const Icon(
+            Icons.psychology, // 🧠 AI vibe
+            color: Colors.white,
+            size: 26,
+          ),
+          onPressed: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.white,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              builder: (_) => const ChatBotSheet(),
+            );
+          },
+        ),
+      ),
       // 🔻 BOTTOM NAV
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentIndex,

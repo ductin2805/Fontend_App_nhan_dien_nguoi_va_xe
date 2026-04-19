@@ -4,7 +4,6 @@ import '../services/api_service.dart';
 
 import 'face_register_screen.dart';
 import 'person_detail_screen.dart';
-import 'dart:convert';
 class PersonListScreen extends StatefulWidget {
   const PersonListScreen({super.key});
 

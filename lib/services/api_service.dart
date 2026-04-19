@@ -4,13 +4,14 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:dio/dio.dart';
 
+import '../models/chat_response.dart';
 import '../models/face_register_response.dart';
 import '../models/history_item.dart';
 import '../models/person_model.dart';
 import '../models/person_update_response.dart';
 class ApiService {
 
-    static const String baseUrl = "http://192.168.1.11:8000";
+    static const String baseUrl = "http://192.168.100.243:8000";
     static String buildUrl(String path) {
       if (path.isEmpty) return "";
 
@@ -199,4 +200,12 @@ class ApiService {
       throw Exception("Cập nhật thất bại");
     }
   }
+    static Future<ChatResponse> chatGemini(String message) async {
+      final res = await dio.post(
+        "/chat/gemini",
+        data: {"message": message},
+      );
+
+      return ChatResponse.fromJson(res.data);
+    }
 }
