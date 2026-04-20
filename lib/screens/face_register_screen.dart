@@ -25,9 +25,9 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen> {
   final dobCtrl = TextEditingController();
   final plateNumberCtrl = TextEditingController();
   final vehiclePlatesCtrl = TextEditingController();
+  
   FaceRegisterResponse? result;
   String? previewBase64;
-
   bool loading = false;
 
   Future<void> pickImage() async {
@@ -36,95 +36,42 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen> {
       setState(() => image = File(picked.path));
     }
   }
+
   Future<void> pickDate() async {
     final picked = await showDatePicker(
       context: context,
       initialDate: DateTime(2000),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
+      locale: const Locale('vi', 'VN'),
     );
 
     if (picked != null) {
-      final day = picked.day.toString().padLeft(2, '0');
-      final month = picked.month.toString().padLeft(2, '0');
-      final year = picked.year;
-
-      dobCtrl.text = "$day/$month/$year"; // 👈 format dd/MM/yyyy
-    }
-  }
-  Future<void> submit() async {
-    final error = validateInputs();
-    if (error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error)),
-
-      );
-      return;
-    }
-    if (image == null || nameCtrl.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Thiếu dữ liệu")),
-      );
-      return;
-    }
-    setState(() => loading = true);
-
-    try {
-      final res = await ApiService.registerFace(
-        file: image!,
-        fields: {
-          "name": nameCtrl.text,
-          "department": departmentCtrl.text,
-          "role": roleCtrl.text,
-          "phone": phoneCtrl.text,
-          "address": addressCtrl.text,
-          "age": ageCtrl.text,
-          "date_of_birth": dobCtrl.text,
-          "cccd": cccdCtrl.text,
-          "plate_number": plateNumberCtrl.text,
-          "vehicle_plates": vehiclePlatesCtrl.text,
-        },
-      );
-
       setState(() {
-        result = res;
-        previewBase64 = res.imageBase64;
+        final day = picked.day.toString().padLeft(2, '0');
+        final month = picked.month.toString().padLeft(2, '0');
+        final year = picked.year;
+        dobCtrl.text = "$day/$month/$year";
+
+        // Tự động tính tuổi
+        final now = DateTime.now();
+        int age = now.year - picked.year;
+        if (now.month < picked.month || (now.month == picked.month && now.day < picked.day)) {
+          age--;
+        }
+        ageCtrl.text = age.toString();
       });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Đăng ký thành công")),
-      );
-      Navigator.pop(context, true);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Lỗi: $e")),
-      );
     }
-
-    setState(() => loading = false);
   }
 
-  Widget input(String hint, TextEditingController ctrl,
-      {TextInputType? type}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: TextField(
-        controller: ctrl,
-        keyboardType: type,
-        decoration: InputDecoration(
-          hintText: hint,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      ),
-    );
-  }
   String? validateInputs() {
+    final name = nameCtrl.text.trim();
     final phone = phoneCtrl.text.trim();
     final cccd = cccdCtrl.text.trim();
     final age = ageCtrl.text.trim();
     final dob = dobCtrl.text.trim();
+
+    if (name.isEmpty) return "Tên không được bỏ trống";
 
     /// 📱 SĐT: 10 số
     if (phone.isNotEmpty && !RegExp(r'^\d{10}$').hasMatch(phone)) {
@@ -144,21 +91,21 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen> {
       }
     }
 
-    /// 📅 Ngày sinh: yyyy-MM-dd
+    /// 📅 Ngày sinh: dd/MM/yyyy
     if (dob.isNotEmpty) {
       try {
-        final parts = dob.split('/'); // dd/MM/yyyy
-
+        final parts = dob.split('/');
         if (parts.length != 3) {
           return "Ngày sinh không hợp lệ";
         }
-
         final day = int.parse(parts[0]);
         final month = int.parse(parts[1]);
         final year = int.parse(parts[2]);
-
         final date = DateTime(year, month, day);
 
+        if (date.day != day || date.month != month || date.year != year) {
+          return "Ngày sinh không hợp lệ";
+        }
         if (date.isAfter(DateTime.now())) {
           return "Ngày sinh không hợp lệ";
         }
@@ -168,90 +115,249 @@ class _FaceRegisterScreenState extends State<FaceRegisterScreen> {
     }
     return null; // ✅ hợp lệ
   }
+
+  Future<void> submit() async {
+    if (image == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Vui lòng chọn ảnh khuôn mặt")));
+      return;
+    }
+
+    final error = validateInputs();
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
+
+    setState(() => loading = true);
+    try {
+      final res = await ApiService.registerFace(
+        file: image!,
+        fields: {
+          "name": nameCtrl.text.trim(),
+          "department": departmentCtrl.text.trim(),
+          "role": roleCtrl.text.trim(),
+          "phone": phoneCtrl.text.trim(),
+          "address": addressCtrl.text.trim(),
+          "age": ageCtrl.text.trim(),
+          "date_of_birth": dobCtrl.text.trim(),
+          "cccd": cccdCtrl.text.trim(),
+          "plate_number": plateNumberCtrl.text.trim(),
+          "vehicle_plates": vehiclePlatesCtrl.text.trim(),
+        },
+      );
+
+      setState(() {
+        result = res;
+        previewBase64 = res.imageBase64;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Đăng ký thành công")));
+        
+        // Tự động quay lại màn hình danh sách sau 1.5 giây và yêu cầu reload
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          if (mounted) Navigator.pop(context, true);
+        });
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Lỗi: $e")));
+    }
+    setState(() => loading = false);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Đăng ký khuôn mặt")),
       backgroundColor: const Color(0xfff5f6fa),
+      appBar: AppBar(
+        title: const Text("ĐĂNG KÝ DANH TÍNH", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        centerTitle: true,
+        elevation: 0,
+      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-
-            /// IMAGE
-            GestureDetector(
-              onTap: pickImage,
-              child: Container(
-                height: 180,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: image != null
-                    ? ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.file(image!, fit: BoxFit.cover),
-                )
-                    : const Icon(Icons.add_a_photo, size: 40),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            /// FORM
-            input("Tên", nameCtrl),
-            input("Nơi làm việc", departmentCtrl),
-            input("Chức vụ", roleCtrl),
-            input("SĐT", phoneCtrl, type: TextInputType.number),
-            input("Địa chỉ", addressCtrl),
-            input("Tuổi", ageCtrl, type: TextInputType.number),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: TextField(
-                controller: dobCtrl,
-                readOnly: true, // 👈 không cho nhập tay
-                onTap: pickDate,
-                decoration: InputDecoration(
-                  hintText: "Ngày sinh (dd/MM/yyyy)",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
+            /// 📸 AVATAR PICKER
+            Center(
+              child: GestureDetector(
+                onTap: pickImage,
+                child: Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: const Offset(0, 5))],
+                    border: Border.all(color: Colors.blue.shade100, width: 3),
                   ),
-                  suffixIcon: const Icon(Icons.calendar_today),
+                  child: image != null
+                      ? ClipOval(child: Image.file(image!, fit: BoxFit.cover))
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_a_photo_rounded, size: 40, color: Colors.blue.shade200),
+                            const SizedBox(height: 4),
+                            const Text("Thêm ảnh", style: TextStyle(fontSize: 12, color: Colors.blueGrey)),
+                          ],
+                        ),
                 ),
               ),
             ),
-            input("CCCD", cccdCtrl, type: TextInputType.number),
-            input("Biển số chính", plateNumberCtrl),
-            input("Biển số phụ (cách nhau , hoặc ;)", vehiclePlatesCtrl),
-            const SizedBox(height: 10),
 
-            ElevatedButton(
-              onPressed: loading ? null : submit,
-              child: loading
-                  ? const CircularProgressIndicator()
-                  : const Text("Đăng ký"),
-            ),
+            const SizedBox(height: 30),
+
+            /// 👤 THÔNG TIN CÁ NHÂN
+            _buildSectionHeader("Thông tin cá nhân"),
+            _buildCard([
+              _buildInput("Họ và tên *", nameCtrl, icon: Icons.person_outline),
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: pickDate,
+                      child: AbsorbPointer(
+                        child: _buildInput("Ngày sinh", dobCtrl, icon: Icons.calendar_today_outlined, hint: "DD/MM/YYYY"),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildInput("Tuổi", ageCtrl, type: TextInputType.number, icon: Icons.cake_outlined)),
+                ],
+              ),
+              _buildInput("Số điện thoại", phoneCtrl, type: TextInputType.phone, icon: Icons.phone_outlined),
+              _buildInput("Số CCCD", cccdCtrl, type: TextInputType.number, icon: Icons.badge_outlined),
+              _buildInput("Địa chỉ / Nơi ở", addressCtrl, icon: Icons.location_on_outlined),
+            ]),
 
             const SizedBox(height: 20),
 
-            /// RESULT
-            if (result != null) ...[
-              const Text("Kết quả AI"),
-              const SizedBox(height: 10),
+            /// 💼 CÔNG VIỆC & PHƯƠNG TIỆN
+            _buildSectionHeader("Công việc & Phương tiện"),
+            _buildCard([
+              _buildInput("Nơi làm việc", departmentCtrl, icon: Icons.business_outlined),
+              _buildInput("Chức vụ", roleCtrl, icon: Icons.work_outline),
+              _buildInput("Biển số xe chính", plateNumberCtrl, icon: Icons.directions_car_filled_outlined),
+              _buildInput("Biển số xe phụ", vehiclePlatesCtrl, icon: Icons.list_alt_outlined, hint: "Ví dụ: 29A-12345, 30B-67890"),
+            ]),
 
-              if (previewBase64 != null)
-                Image.memory(base64Decode(previewBase64!)),
+            const SizedBox(height: 30),
 
-              const SizedBox(height: 10),
+            /// 🚀 NÚT ĐĂNG KÝ
+            SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: ElevatedButton(
+                onPressed: loading ? null : submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  elevation: 2,
+                ),
+                child: loading
+                    ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text("XÁC NHẬN ĐĂNG KÝ", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.1)),
+              ),
+            ),
 
-              Text("ID: ${result!.personId}"),
-              Text("Samples: ${result!.samples}"),
-              Text("Model: ${result!.backend}"),
-              Text("BBox: ${result!.bbox}"),
-            ]
+            const SizedBox(height: 25),
+
+            /// 📊 KẾT QUẢ TỪ AI
+            if (result != null) _buildResultSection(),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 10),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(title.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blueGrey, letterSpacing: 1.2)),
+      ),
+    );
+  }
+
+  Widget _buildCard(List<Widget> children) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Column(children: children),
+    );
+  }
+
+  Widget _buildInput(String label, TextEditingController ctrl, {TextInputType? type, IconData? icon, String? hint}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextField(
+        controller: ctrl,
+        keyboardType: type,
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          prefixIcon: icon != null ? Icon(icon, size: 20, color: Colors.blueAccent.withOpacity(0.7)) : null,
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
+          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.blueAccent, width: 1.5)),
+          filled: true,
+          fillColor: const Color(0xfffafafa),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultSection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.blue.shade100),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.auto_awesome, color: Colors.blue),
+              const SizedBox(width: 10),
+              const Text("KẾT QUẢ AI XÁC NHẬN", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+            ],
+          ),
+          const SizedBox(height: 15),
+          if (previewBase64 != null)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.memory(base64Decode(previewBase64!), width: double.infinity, height: 200, fit: BoxFit.cover),
+            ),
+          const SizedBox(height: 15),
+          _resultRow("ID Hệ thống", result!.personId),
+          _resultRow("Số mẫu ảnh", result!.samples.toString()),
+          _resultRow("BBox", result!.bbox.toString()),
+        ],
+      ),
+    );
+  }
+
+  Widget _resultRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.blueGrey, fontSize: 13)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 13)),
+        ],
       ),
     );
   }

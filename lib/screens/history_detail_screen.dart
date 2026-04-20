@@ -99,14 +99,30 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
         return "Nhận diện đối tượng";
       case "face_recognition":
         return "Nhận diện khuôn mặt";
+      case "live_camera":
+        return "Camera trực tiếp";
+      case "live_camera_frame":
+        return "Frame camera";
       default:
         return "Không xác định";
     }
   }
   String translateKey(String key) {
     switch (key) {
+      case "source":
+        return "Nguồn";
+      case "timestamp":
+        return "Thời gian";
 
     /// 🔹 SUMMARY
+      case "total_vehicles":
+        return "Số phương tiện";
+      case "total_plates":
+        return "Số biển số";
+      case "plates_found":
+        return "Biển số tìm thấy";
+      case "processing_time_ms":
+        return "Thời gian xử lý (ms)";
       case "total_frames":
         return "Tổng số frame";
       case "processed_frames":
@@ -119,12 +135,8 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
         return "Thời gian xử lý";
 
     /// 🔹 IMAGE
-      case "total_vehicles":
-        return "Số phương tiện";
       case "plates_detected":
         return "Biển số phát hiện";
-      case "plates_found":
-        return "Danh sách biển số";
 
     /// 🔹 OBJECT
       case "detections":

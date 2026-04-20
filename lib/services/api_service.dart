@@ -11,7 +11,7 @@ import '../models/person_model.dart';
 import '../models/person_update_response.dart';
 class ApiService {
 
-    static const String baseUrl = "http://192.168.100.243:8000";
+    static String baseUrl = "http://192.168.100.243:8000";
     static String buildUrl(String path) {
       if (path.isEmpty) return "";
 
@@ -136,6 +136,17 @@ class ApiService {
       throw Exception("Xóa toàn bộ thất bại");
     }
   }
+
+  static Future<Map<String, dynamic>> getLiveCameraOptions() async {
+    final uri = Uri.parse("$baseUrl/recognize-live-frame/options");
+    final res = await http.get(uri);
+    if (res.statusCode == 200) {
+      return json.decode(utf8.decode(res.bodyBytes));
+    } else {
+      throw Exception("Không thể lấy cấu hình camera");
+    }
+  }
+
   static Future<List<Person>> getPersons() async {
     final uri = Uri.parse("$baseUrl/face/persons");
 

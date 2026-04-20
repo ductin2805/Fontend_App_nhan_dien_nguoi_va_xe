@@ -5,7 +5,9 @@ import 'detection_screen.dart';
 import 'history_screen.dart';
 import 'plate_screen.dart';
 import 'realtime_camera_screen.dart';
+import 'realtime_live_screen.dart';
 import 'chat_bot_sheet.dart';
+
 class HomeMenu extends StatefulWidget {
   const HomeMenu({super.key});
 
@@ -18,236 +20,194 @@ class _HomeMenuState extends State<HomeMenu> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
-
-      body: Column(
-        children: [
-          const SizedBox(height: 60),
-
-          // 🔷 Logo
-          const Icon(Icons.camera_alt, size: 80, color: Colors.blue),
-
-          const SizedBox(height: 10),
-
-          const Text(
-            "SMART TRAFFIC VISION",
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              theme.colorScheme.primary.withOpacity(0.1),
+              theme.colorScheme.background,
+            ],
           ),
-
-          const SizedBox(height: 30),
-
-          // 🔲 GRID MENU
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: GridView.count(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                children: [
-
-                  // 📹 REALTIME
-                  menuCard(
-                    icon: Icons.videocam,
-                    title: "VIDEO",
-                    subtitle: "Phân tích & nhận diện ",
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const RealtimeCameraScreen(),
-                        ),
-                      );
-                    },
-                  ),
-
-                  // 🚗 OBJECT DETECTION
-                  menuCard(
-                    icon: Icons.directions_car_filled, // chuẩn hơn
-                    title: "NHẬN DIỆN\n GIAO THÔNG",
-                    subtitle: "Phân tích xe cộ",
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const TrafficScreen(),
-                        ),
-                      );
-                    },
-                  ),
-
-                  // 🔢 PLATE
-                  menuCard(
-                    icon: Icons.badge, // giống biển số hơn
-                    title: "NHẬN DIỆN\nBIỂN SỐ",
-                    subtitle: "Phân tích biển số",
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const PlateScreen(),
-                        ),
-                      );
-                    },
-                  ),
-
-                  // 😀 FACE RECOGNITION
-                  menuCard(
-                    icon: Icons.face, // icon chuẩn nhất rồi, đừng sáng tạo nữa
-                    title: "NHẬN DIỆN\nKHUÔN MẶT",
-                    subtitle: "truy xuất thông tin",
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const FaceRecognitionScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 60),
+            // Header Section
+            Center(
+              child: Container(
+                padding: const EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withOpacity(0.2),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    )
+                  ],
+                ),
+                child: Icon(Icons.security, size: 50, color: theme.colorScheme.primary),
               ),
             ),
-          )
-        ],
-      ),
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: const LinearGradient(
-            colors: [
-              Color(0xFF4facfe),
-              Color(0xFF00f2fe),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.blue.withOpacity(0.4),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+            const SizedBox(height: 15),
+            Text(
+              "AI TRAFFIC VISION",
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.5,
+                color: theme.colorScheme.primary,
+              ),
             ),
+            const Text(
+              "Hệ thống giám sát thông minh",
+              style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500, fontSize: 12),
+            ),
+            const SizedBox(height: 25),
+
+            // Grid Menu
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: GridView.count(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 15,
+                  mainAxisSpacing: 15,
+                  childAspectRatio: 1.1,
+                  children: [
+                    _buildMenuCard(
+                      context,
+                      icon: Icons.video_collection_rounded,
+                      title: "VIDEO FILE",
+                      subtitle: "Phân tích từ file",
+                      color: const Color(0xFF4facfe),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RealtimeCameraScreen())),
+                    ),
+                    _buildMenuCard(
+                      context,
+                      icon: Icons.videocam_rounded,
+                      title: "LIVE CAMERA",
+                      subtitle: "Giám sát trực tiếp",
+                      color: const Color(0xFFff0844),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RealtimeLiveScreen())),
+                    ),
+                    _buildMenuCard(
+                      context,
+                      icon: Icons.commute_rounded,
+                      title: "GIAO THÔNG",
+                      subtitle: "Nhận diện phương tiện",
+                      color: const Color(0xFF43e97b),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TrafficScreen())),
+                    ),
+                    _buildMenuCard(
+                      context,
+                      icon: Icons.vignette_rounded,
+                      title: "BIỂN SỐ",
+                      subtitle: "Truy xuất biển số",
+                      color: const Color(0xFFfa709a),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PlateScreen())),
+                    ),
+                    _buildMenuCard(
+                      context,
+                      icon: Icons.face_rounded,
+                      title: "KHUÔN MẶT",
+                      subtitle: "Nhận diện danh tính",
+                      color: const Color(0xFFf6d365),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FaceRecognitionScreen())),
+                    ),
+                    _buildMenuCard(
+                      context,
+                      icon: Icons.settings_rounded,
+                      title: "CÀI ĐẶT",
+                      subtitle: "Cấu hình hệ thống",
+                      color: Colors.blueGrey,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
+                    ),
+                  ],
+                ),
+              ),
+            )
           ],
         ),
-        child: FloatingActionButton(
-          backgroundColor: Colors.transparent, // 🔥 để lộ gradient
-          elevation: 0,
-          child: const Icon(
-            Icons.psychology, // 🧠 AI vibe
-            color: Colors.white,
-            size: 26,
-          ),
-          onPressed: () {
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.white,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              builder: (_) => const ChatBotSheet(),
-            );
-          },
-        ),
       ),
-      // 🔻 BOTTOM NAV
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentIndex,
-        onTap: (i) {
-          if (i == 0) {
-            // Home (đang ở đây rồi thì thôi)
-            return;
-          }
-
-          if (i == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => HistoryScreen()),
-            );
-          }
-
-          if (i == 2) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => SettingsScreen(),
-              ),
-            );
-          }
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (_) => const ChatBotSheet(),
+          );
         },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: "Trang Chủ",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history),
-            label: "Lịch Sử",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: "Cài đặt",
-          ),
-        ],
+        backgroundColor: theme.colorScheme.primary,
+        elevation: 10,
+        shape: const CircleBorder(),
+        child: const Icon(Icons.psychology, color: Colors.white, size: 30),
+      ),
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: currentIndex,
+          elevation: 0,
+          backgroundColor: Colors.white,
+          selectedItemColor: theme.colorScheme.primary,
+          unselectedItemColor: Colors.grey,
+          showUnselectedLabels: false,
+          onTap: (i) {
+            setState(() => currentIndex = i);
+            if (i == 1) Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen()));
+            if (i == 2) Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+          },
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.grid_view_rounded), label: "Trang chủ"),
+            BottomNavigationBarItem(icon: Icon(Icons.history_rounded), label: "Lịch sử"),
+            BottomNavigationBarItem(icon: Icon(Icons.settings_rounded), label: "Cài đặt"),
+          ],
+        ),
       ),
     );
   }
 
-  // 🧩 CARD UI
-  Widget menuCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildMenuCard(BuildContext context,
+      {required IconData icon, required String title, required String subtitle, required Color color, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
+          color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF0F4C75), Color(0xFF3282B8)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black26,
-              blurRadius: 6,
-              offset: const Offset(2, 4),
-            ),
+              color: color.withOpacity(0.15),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            )
           ],
         ),
-        padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 40, color: Colors.white),
-
-            const SizedBox(height: 10),
-
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
               ),
+              child: Icon(icon, size: 28, color: color),
             ),
-
-            const SizedBox(height: 6),
-
-            Text(
-              subtitle,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-              ),
+            const SizedBox(height: 10),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            const SizedBox(height: 2),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Text(subtitle, style: const TextStyle(fontSize: 9, color: Colors.grey), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
             ),
           ],
         ),
