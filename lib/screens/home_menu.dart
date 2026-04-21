@@ -1,5 +1,6 @@
 import 'package:ai_traffic_app/screens/face_recognition_screen.dart';
 import 'package:ai_traffic_app/screens/setting_screen.dart';
+import 'package:ai_traffic_app/screens/user_guide_screen.dart';
 import 'package:flutter/material.dart';
 import 'detection_screen.dart';
 import 'history_screen.dart';
@@ -122,11 +123,11 @@ class _HomeMenuState extends State<HomeMenu> {
                     ),
                     _buildMenuCard(
                       context,
-                      icon: Icons.settings_rounded,
-                      title: "CÀI ĐẶT",
-                      subtitle: "Cấu hình hệ thống",
+                      icon: Icons.help_outline_rounded,
+                      title: "HƯỚNG DẪN",
+                      subtitle: "Cách dùng chi tiết",
                       color: Colors.blueGrey,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UserGuideScreen())),
                     ),
                   ],
                 ),

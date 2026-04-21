@@ -6,7 +6,7 @@ class RecognitionService {
   // Đổi ApiProvider.apiClient thành ApiService.dio (hoặc ApiService.apiClient tùy theo khai báo trong file api_service.dart)
   final api = ApiService.dio;
 
-  Future<RecognitionResponse> recognizeVideo(String filePath) async {
+  Future<RecognitionResponse> recognizeVideo(String filePath, {int frameSkip = 30, int maxFrames = 50}) async {
     try {
       // Tạo FormData để gửi file (tương đương -F trong Curl)
       FormData formData = FormData.fromMap({
@@ -23,8 +23,8 @@ class RecognitionService {
         '/recognize-video',
         data: formData,
         queryParameters: {
-          'frame_skip': 10,
-          'max_frames': 20,
+          'frame_skip': frameSkip,
+          'max_frames': maxFrames,
         },
         options: Options(
           contentType: 'multipart/form-data',
