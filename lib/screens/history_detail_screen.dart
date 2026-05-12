@@ -36,25 +36,19 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
   String formatPlate(String plate, String type) {
     if (plate.isEmpty) return plate;
 
-    plate = plate.replaceAll(RegExp(r'[^A-Z0-9]'), '');
+    // Chuẩn hoá: Xoá mọi ký tự không phải chữ và số
+    String cleanPlate = plate.replaceAll(RegExp(r'[^A-Z0-9]'), '').toUpperCase();
 
-    // 🚫 nếu quá ngắn thì bỏ qua
-    if (plate.length < 8) return plate;
-
-    // 🏍 XE MÁY: 67B284061 → 67B2-840.61
-    if (type.toLowerCase() == "motorcycle") {
-      if (plate.length >= 9) {
-        return "${plate.substring(0, 4)}-${plate.substring(4, 7)}.${plate.substring(7)}";
-      }
+    // 🚗 Ô TÔ (8 ký tự): 61A66666 -> 61A-66666
+    if (cleanPlate.length == 8) {
+      return "${cleanPlate.substring(0, 3)}-${cleanPlate.substring(3)}";
+    }
+    // 🏍 XE MÁY (9 ký tự): 67B284061 -> 67B2-84061
+    else if (cleanPlate.length == 9) {
+      return "${cleanPlate.substring(0, 4)}-${cleanPlate.substring(4)}";
     }
 
-    // 🚗 Ô TÔ: 67B284061 → 67B-840.61
-    else {
-      if (plate.length >= 8) {
-        return "${plate.substring(0, 3)}-${plate.substring(3, 6)}.${plate.substring(6)}";
-      }
-    }
-
+    // Nếu không khớp độ dài chuẩn, trả về nguyên bản
     return plate;
   }
 

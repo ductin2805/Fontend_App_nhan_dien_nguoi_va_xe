@@ -12,7 +12,7 @@ class ChatDB {
 
     _db = await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE chat(
@@ -20,9 +20,15 @@ class ChatDB {
             role TEXT,
             text TEXT,
             source TEXT,
+            warning TEXT,
             timestamp INTEGER
           )
         ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute("ALTER TABLE chat ADD COLUMN warning TEXT");
+        }
       },
     );
 

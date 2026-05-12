@@ -3,6 +3,7 @@ class ChatMessage {
   final String role; // user / bot
   final String text;
   final String? source;
+  final String? warning; // Thêm trường warning
   final int timestamp;
 
   ChatMessage({
@@ -10,6 +11,7 @@ class ChatMessage {
     required this.role,
     required this.text,
     this.source,
+    this.warning,
     required this.timestamp,
   });
 
@@ -19,6 +21,7 @@ class ChatMessage {
       "role": role,
       "text": text,
       "source": source,
+      "warning": warning,
       "timestamp": timestamp,
     };
   }
@@ -29,6 +32,7 @@ class ChatMessage {
       role: map["role"] as String,
       text: map["text"] as String,
       source: map["source"] as String?,
+      warning: map["warning"] as String?,
       timestamp: map["timestamp"] as int,
     );
   }

@@ -49,6 +49,7 @@ class _ChatBotSheetState extends State<ChatBotSheet> {
         role: "bot",
         text: chat.reply,
         source: chat.source,
+        warning: chat.warning,
         timestamp: DateTime.now().millisecondsSinceEpoch,
       );
 
@@ -59,6 +60,7 @@ class _ChatBotSheetState extends State<ChatBotSheet> {
           "role": "bot",
           "text": chat.reply,
           "source": chat.source,
+          "warning": chat.warning,
         });
       });
 
@@ -118,6 +120,7 @@ class _ChatBotSheetState extends State<ChatBotSheet> {
         "role": e.role,
         "text": e.text,
         "source": e.source,
+        "warning": e.warning,
       }).toList();
     });
   }
@@ -220,24 +223,59 @@ class _ChatBotSheetState extends State<ChatBotSheet> {
                           ),
                         ),
 
-                      Container(
-                        margin: const EdgeInsets.symmetric(vertical: 6),
-                        padding: const EdgeInsets.all(10),
-                        constraints:
-                        const BoxConstraints(maxWidth: 250),
-                        decoration: BoxDecoration(
-                          color: isUser
-                              ? const Color(0xFF3282B8)
-                              : getColor(m["source"] ?? ""),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          m["text"] ?? "",
-                          style: TextStyle(
-                            color:
-                            isUser ? Colors.white : Colors.black,
+                      Column(
+                        crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            margin: const EdgeInsets.symmetric(vertical: 6),
+                            padding: const EdgeInsets.all(10),
+                            constraints:
+                            const BoxConstraints(maxWidth: 250),
+                            decoration: BoxDecoration(
+                              color: isUser
+                                  ? const Color(0xFF3282B8)
+                                  : getColor(m["source"] ?? ""),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              m["text"] ?? "",
+                              style: TextStyle(
+                                color:
+                                isUser ? Colors.white : Colors.black,
+                              ),
+                            ),
                           ),
-                        ),
+
+                          // 🔥 HIỂN THỊ CẢNH BÁO (THEO YÊU CẦU)
+                          if (!isUser && m["warning"] != null && m["warning"].toString().isNotEmpty)
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.all(10),
+                              constraints: const BoxConstraints(maxWidth: 250),
+                              decoration: BoxDecoration(
+                                color: Colors.orange[100],
+                                border: Border.all(color: Colors.orange, width: 1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.warning_amber, color: Colors.orange, size: 18),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      m["warning"],
+                                      style: TextStyle(
+                                        color: Colors.orange[900],
+                                        fontSize: 12,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
                       ),
 
                       if (isUser)
