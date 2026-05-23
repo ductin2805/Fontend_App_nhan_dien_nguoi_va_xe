@@ -174,11 +174,26 @@ class PdfService {
                   // Data from plates
                   ...plates.map((p) {
                     final owner = p["owner"] ?? {};
+                    final info = owner["info"] ?? {};
+                    String ownerInfo = "-";
+
+                    // Thử lấy dữ liệu từ nhiều nguồn: info hoặc trực tiếp từ owner
+                    final name = v(owner["name"] ?? owner["owner_name"] ?? "");
+                    final phone = v(info["phone"] ?? info["phone_number"] ?? owner["phone"] ?? owner["phone_number"] ?? "");
+                    final cccd = v(info["cccd"] ?? info["id_card"] ?? owner["cccd"] ?? owner["id_card"] ?? "");
+                    final address = v(info["address"] ?? owner["address"] ?? "");
+
+                    if (name.isNotEmpty && name != "Không có") {
+                      ownerInfo = name;
+                      if (phone.isNotEmpty && phone != "Không có") ownerInfo += "\nSĐT: $phone";
+                      if (cccd.isNotEmpty && cccd != "Không có") ownerInfo += "\nCCCD: $cccd";
+                      if (address.isNotEmpty && address != "Không có") ownerInfo += "\nĐC: $address";
+                    }
                     return pw.TableRow(
                       children: [
                         _buildTableCell(translateKey(p["class_name"] ?? "car")),
                         _buildTableCell(v(p["plate"])),
-                        _buildTableCell(owner["found"] == true ? owner["name"] : "Không xác định"),
+                        _buildTableCell(ownerInfo),
                         _buildTableCell("${((p["confidence"] ?? 0) * 100).toStringAsFixed(1)}%"),
                       ],
                     );
@@ -187,11 +202,25 @@ class PdfService {
                   ...vehicles.where((vcl) => !plates.any((p) => p["plate"] == (vcl["plate"]?["text"]))).map((vcl) {
                     final plate = vcl["plate"] ?? {};
                     final owner = plate["owner"] ?? {};
+                    final info = owner["info"] ?? {};
+                    String ownerInfo = "-";
+
+                    final name = v(owner["name"] ?? owner["owner_name"] ?? "");
+                    final phone = v(info["phone"] ?? info["phone_number"] ?? owner["phone"] ?? owner["phone_number"] ?? "");
+                    final cccd = v(info["cccd"] ?? info["id_card"] ?? owner["cccd"] ?? owner["id_card"] ?? "");
+                    final address = v(info["address"] ?? owner["address"] ?? "");
+
+                    if (name.isNotEmpty && name != "Không có") {
+                      ownerInfo = name;
+                      if (phone.isNotEmpty && phone != "Không có") ownerInfo += "\nSĐT: $phone";
+                      if (cccd.isNotEmpty && cccd != "Không có") ownerInfo += "\nCCCD: $cccd";
+                      if (address.isNotEmpty && address != "Không có") ownerInfo += "\nĐC: $address";
+                    }
                     return pw.TableRow(
                       children: [
                         _buildTableCell(translateKey(vcl["class_name"] ?? "car")),
                         _buildTableCell(v(plate["text"])),
-                        _buildTableCell(owner["found"] == true ? owner["name"] : "Không xác định"),
+                        _buildTableCell(ownerInfo),
                         _buildTableCell("${((plate["confidence"] ?? 0) * 100).toStringAsFixed(1)}%"),
                       ],
                     );
@@ -201,8 +230,8 @@ class PdfService {
               pw.SizedBox(height: 20),
             ],
 
-            // Phần Chi tiết Khuôn mặt
-            if (faces.isNotEmpty) ...[
+            // Phần Chi tiết Khuôn mặt (Chỉ hiện người đã định danh)
+            if (faces.any((f) => (f["top_matches"] as List? ?? []).isNotEmpty)) ...[
               pw.Text("CHI TIẾT NHẬN DIỆN KHUÔN MẶT", style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14, color: primaryColor)),
               pw.SizedBox(height: 8),
               pw.Table(
@@ -216,16 +245,32 @@ class PdfService {
                       _buildTableCell("Độ tin cậy", isHeader: true),
                     ],
                   ),
-                  ...faces.map((f) {
-                    final matches = f["top_matches"] as List? ?? [];
-                    if (matches.isEmpty) {
-                      return pw.TableRow(children: [_buildTableCell("Người lạ"), _buildTableCell("-"), _buildTableCell("-")]);
-                    }
+                  ...faces.where((f) => (f["top_matches"] as List? ?? []).isNotEmpty).map((f) {
+                    final matches = f["top_matches"] as List;
                     final top = matches.first;
+                    final info = top["info"] ?? {};
+                    
+                    final name = v(top["name"] ?? "");
+                    final phone = v(info["phone"] ?? info["phone_number"] ?? top["phone"] ?? "");
+                    final cccd = v(info["cccd"] ?? info["id_card"] ?? top["cccd"] ?? "");
+                    final address = v(info["address"] ?? top["address"] ?? "");
+                    
+                    String contactInfo = "";
+                    if (phone.isNotEmpty && phone != "Không có") contactInfo += "SĐT: $phone";
+                    if (cccd.isNotEmpty && cccd != "Không có") {
+                      if (contactInfo.isNotEmpty) contactInfo += "\n";
+                      contactInfo += "CCCD: $cccd";
+                    }
+                    if (address.isNotEmpty && address != "Không có") {
+                      if (contactInfo.isNotEmpty) contactInfo += "\n";
+                      contactInfo += "ĐC: $address";
+                    }
+                    if (contactInfo.isEmpty) contactInfo = "-";
+
                     return pw.TableRow(
                       children: [
-                        _buildTableCell(v(top["name"])),
-                        _buildTableCell("SĐT: ${v(top["info"]?["phone"])}\nCCCD: ${v(top["info"]?["cccd"])}"),
+                        _buildTableCell(name.isNotEmpty ? name : "Chưa đặt tên"),
+                        _buildTableCell(contactInfo),
                         _buildTableCell("${((top["match_score"] ?? 0) * 100).toStringAsFixed(1)}%"),
                       ],
                     );

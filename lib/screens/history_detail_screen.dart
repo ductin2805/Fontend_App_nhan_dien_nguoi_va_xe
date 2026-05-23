@@ -366,8 +366,14 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                 Icons.credit_card,
                 Column(
                   children: plates.map<Widget>((p) {
-                    final owner = p["owner"];
-                    final info = owner?["info"] ?? {};
+                    final owner = p["owner"] ?? {};
+                    final info = owner["info"] ?? {};
+                    
+                    final name = v(owner["name"] ?? owner["owner_name"]);
+                    final phone = v(info["phone"] ?? info["phone_number"] ?? owner["phone"] ?? owner["phone_number"]);
+                    final cccd = v(info["cccd"] ?? info["id_card"] ?? owner["cccd"] ?? owner["id_card"]);
+                    
+                    final hasOwnerInfo = owner["found"] == true || name.isNotEmpty;
                     final confidence = (p["confidence"] ?? 0) * 100;
 
                     return Container(
@@ -417,52 +423,36 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
 
                           const SizedBox(height: 6),
 
-                          // 🔥 CHỦ SỞ HỮU
-                          Row(
-                            children: [
-                              Icon(
-                                owner?["found"] == true
-                                    ? Icons.verified
-                                    : Icons.person_outline,
-                                size: 16,
-                                color: owner?["found"] == true
-                                    ? Colors.green
-                                    : Colors.grey,
-                              ),
-                              const SizedBox(width: 4),
-
-                              Text(
-                                owner?["found"] == true
-                                    ? v(owner?["name"])
-                                    : "Không xác định",
-                                style: TextStyle(
-                                  color: owner?["found"] == true
-                                      ? Colors.green
-                                      : Colors.grey,
-                                  fontWeight: FontWeight.w500,
+                          // 🔥 CHỦ SỞ HỮU (Chỉ hiện khi tìm thấy)
+                          if (hasOwnerInfo) ...[
+                            Row(
+                              children: [
+                                const Icon(Icons.verified, size: 16, color: Colors.green),
+                                const SizedBox(width: 4),
+                                Text(
+                                  name.isNotEmpty ? name : "Chủ xe",
+                                  style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w500),
                                 ),
-                              ),
-                            ],
-                          ),
-
-                          // 🔥 CHI TIẾT (chỉ khi có owner)
-                          if (owner?["found"] == true) ...[
+                              ],
+                            ),
                             const Divider(),
-
                             _row(
                               "Biển chuẩn",
                               formatPlate(
-                                v(owner?["plate"]),
+                                v(owner["plate"] ?? owner["plate_number"]),
                                 p["class_name"] ?? "",
                               ),
                             ),
-                            _row("SĐT", info["phone"]),
-                            _row("Địa chỉ", info["address"]),
-                            _row("Ngày sinh", info["date_of_birth"]),
-                            _row("CCCD", info["cccd"]),
-                            _row("Nơi làm việc", info["department"]),
-                            _row("Chức vụ", info["role"]),
-                            _row("Tuổi", info["age"]),
+                            if (phone.isNotEmpty && phone != "Không có") _row("SĐT", phone),
+                            if (v(info["address"] ?? owner["address"]) != "Không có")
+                              _row("Địa chỉ", info["address"] ?? owner["address"]),
+                            if (v(info["date_of_birth"] ?? owner["date_of_birth"]) != "Không có")
+                              _row("Ngày sinh", info["date_of_birth"] ?? owner["date_of_birth"]),
+                            if (cccd.isNotEmpty && cccd != "Không có") _row("CCCD", cccd),
+                            if (v(info["department"] ?? info["office"] ?? owner["department"]) != "Không có")
+                              _row("Nơi làm việc", info["department"] ?? info["office"] ?? owner["department"]),
+                            if (v(info["role"] ?? owner["role"]) != "Không có")
+                              _row("Chức vụ", info["role"] ?? owner["role"]),
                           ],
                         ],
                       ),
@@ -478,12 +468,17 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
                 Icons.directions_car,
                 Column(
                   children: vehicles.map<Widget>((vcl) {
-                    final plate = vcl["plate"];
-                    final owner = plate?["owner"];
-                    final info = owner?["info"] ?? {};
+                    final plate = vcl["plate"] ?? {};
+                    final owner = plate["owner"] ?? {};
+                    final info = owner["info"] ?? {};
 
-                    final plateText = plate?["text"] ?? "";
-                    final confidence = (plate?["confidence"] ?? 0) * 100;
+                    final name = v(owner["name"] ?? owner["owner_name"]);
+                    final phone = v(info["phone"] ?? info["phone_number"] ?? owner["phone"] ?? owner["phone_number"]);
+                    final cccd = v(info["cccd"] ?? info["id_card"] ?? owner["cccd"] ?? owner["id_card"]);
+                    
+                    final hasOwnerInfo = owner["found"] == true || name.isNotEmpty;
+                    final plateText = plate["text"] ?? "";
+                    final confidence = (plate["confidence"] ?? 0) * 100;
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 10),
@@ -531,52 +526,36 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
 
                           const SizedBox(height: 6),
 
-                          // 🔥 OWNER
-                          Row(
-                            children: [
-                              Icon(
-                                owner?["found"] == true
-                                    ? Icons.verified
-                                    : Icons.person_outline,
-                                size: 16,
-                                color: owner?["found"] == true
-                                    ? Colors.green
-                                    : Colors.grey,
-                              ),
-                              const SizedBox(width: 4),
-
-                              Text(
-                                owner?["found"] == true
-                                    ? v(owner?["name"])
-                                    : "Không xác định",
-                                style: TextStyle(
-                                  color: owner?["found"] == true
-                                      ? Colors.green
-                                      : Colors.grey,
-                                  fontWeight: FontWeight.w500,
+                          // 🔥 OWNER (Chỉ hiện khi tìm thấy)
+                          if (hasOwnerInfo) ...[
+                            Row(
+                              children: [
+                                const Icon(Icons.verified, size: 16, color: Colors.green),
+                                const SizedBox(width: 4),
+                                Text(
+                                  name.isNotEmpty ? name : "Chủ xe",
+                                  style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w500),
                                 ),
-                              ),
-                            ],
-                          ),
-
-                          // 🔥 DETAIL (nếu có owner)
-                          if (owner?["found"] == true) ...[
+                              ],
+                            ),
                             const Divider(),
-
                             _row(
                               "Biển chuẩn",
                               formatPlate(
-                                v(owner?["plate"]),
+                                v(owner["plate"] ?? owner["plate_number"]),
                                 vcl["class_name"] ?? "",
                               ),
                             ),
-                            _row("SĐT", info["phone"]),
-                            _row("Địa chỉ", info["address"]),
-                            _row("Ngày sinh", info["date_of_birth"]),
-                            _row("CCCD", info["cccd"]),
-                            _row("Nơi làm việc", info["department"]),
-                            _row("Chức vụ", info["role"]),
-                            _row("Tuổi", info["age"]),
+                            if (phone.isNotEmpty && phone != "Không có") _row("SĐT", phone),
+                            if (v(info["address"] ?? owner["address"]) != "Không có")
+                              _row("Địa chỉ", info["address"] ?? owner["address"]),
+                            if (v(info["date_of_birth"] ?? owner["date_of_birth"]) != "Không có")
+                              _row("Ngày sinh", info["date_of_birth"] ?? owner["date_of_birth"]),
+                            if (cccd.isNotEmpty && cccd != "Không có") _row("CCCD", cccd),
+                            if (v(info["department"] ?? owner["department"]) != "Không có")
+                              _row("Nơi làm việc", info["department"] ?? owner["department"]),
+                            if (v(info["role"] ?? owner["role"]) != "Không có")
+                              _row("Chức vụ", info["role"] ?? owner["role"]),
                           ],
                         ],
                       ),
@@ -593,87 +572,63 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
               ),
 
             /// 🔹 FACE
-            if (faces.isNotEmpty)
+            if (faces.any((f) => (f["top_matches"] as List? ?? []).isNotEmpty))
               _section(
                 "KHUÔN MẶT",
                 Icons.face,
                 Column(
-                  children: faces.map<Widget>((f) {
-                    final matches = f["top_matches"] ?? [];
+                  children: faces.where((f) => (f["top_matches"] as List? ?? []).isNotEmpty).map<Widget>((f) {
+                    final matches = f["top_matches"] as List;
                     final mainScore = (f["match_score"] ?? 0) * 100;
 
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-
-                        // 🔹 Score tổng
-                        _row("Độ tin cậy cao nhất",
-                            "${mainScore.toStringAsFixed(1)}%"),
-
+                        _row("Độ tin cậy cao nhất", "${mainScore.toStringAsFixed(1)}%"),
                         const SizedBox(height: 6),
+                        Column(
+                          children: matches.map<Widget>((p) {
+                            final score = (p["match_score"] ?? 0) * 100;
+                            final info = p["info"] ?? {};
+                            final phone = v(info["phone"] ?? info["phone_number"] ?? p["phone"]);
+                            final cccd = v(info["cccd"] ?? info["id_card"] ?? p["cccd"]);
 
-                        // 🔥 DANH SÁCH NGƯỜI
-                        if (matches.isNotEmpty)
-                          Column(
-                            children: matches.map<Widget>((p) {
-                              final score = (p["match_score"] ?? 0) * 100;
-                              final info = p["info"] ?? {};
-
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 10),
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[100],
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-
-                                    Row(
-                                      children: [
-                                        const Icon(Icons.person, color: Colors.blue),
-                                        const SizedBox(width: 6),
-
-                                        Expanded(
-                                          child: Text(
-                                            v(p["name"]),
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-
-                                        Text(
-                                          "${score.toStringAsFixed(1)}%",
-                                          style: TextStyle(
-                                            color: score > 55
-                                                ? Colors.green
-                                                : Colors.orange,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-
-                                    const SizedBox(height: 6),
-
-                                    _row("Mã", p["person_code"]),
-                                    _row("SĐT", info["phone"]),
-                                    _row("Địa chỉ", info["address"]),
-                                    _row("Ngày sinh", info["date_of_birth"]),
-                                    _row("CCCD", info["cccd"]),
-                                    _row("Phòng ban", info["department"]),
-                                    _row("Chức vụ", info["role"]),
-                                    _row("Tuổi", info["age"]),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-                          )
-                        else
-                          const Text("Không có dữ liệu nhận diện"),
-
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[100],
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.person, color: Colors.blue),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(v(p["name"]), style: const TextStyle(fontWeight: FontWeight.bold)),
+                                      ),
+                                      Text(
+                                        "${score.toStringAsFixed(1)}%",
+                                        style: TextStyle(color: score > 55 ? Colors.green : Colors.orange, fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  if (v(p["person_code"]) != "Không có") _row("Mã", p["person_code"]),
+                                  if (phone.isNotEmpty && phone != "Không có") _row("SĐT", phone),
+                                  if (v(info["address"]) != "Không có") _row("Địa chỉ", info["address"]),
+                                  if (v(info["date_of_birth"]) != "Không có") _row("Ngày sinh", info["date_of_birth"]),
+                                  if (cccd.isNotEmpty && cccd != "Không có") _row("CCCD", cccd),
+                                  if (v(info["department"]) != "Không có") _row("Phòng ban", info["department"]),
+                                  if (v(info["role"]) != "Không có") _row("Chức vụ", info["role"]),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
                         const Divider(height: 20),
                       ],
                     );

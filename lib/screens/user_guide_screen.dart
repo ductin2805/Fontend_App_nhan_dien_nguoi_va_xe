@@ -80,7 +80,7 @@ class UserGuideScreen extends StatelessWidget {
             
             const SizedBox(height: 30),
             const Center(
-              child: Text("Phiên bản Pro 2.5.0 • Powered by AI Vision Team", 
+              child: Text("Phiên bản Pro 1.1.0 • Powered by AI Vision Team",
                 style: TextStyle(color: Colors.grey, fontSize: 11)),
             ),
             const SizedBox(height: 20),

@@ -245,7 +245,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: const [
               ListTile(
                 title: Text("AI Traffic Monitor"),
-                subtitle: Text("Phiên bản 3.11.0\nĐang phát triển bởi AI Assistant"),
+                subtitle: Text("Phiên bản 1.1.0\nĐang phát triển bởi AI Assistant"),
                 trailing: Icon(Icons.info_outline),
               )
             ],
